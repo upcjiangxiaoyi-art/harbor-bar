@@ -278,7 +278,11 @@ function addTopBar() {
     searchToggle.title = t`Search in chat`;
     searchToggle.tabIndex = 0;
     searchToggle.classList.add('right_menu_button');
-    searchToggle.addEventListener('click', () => {
+    // pointerdown 而非 click：iOS 上键盘弹出时点图标，click 会被
+    // "收键盘+失焦+布局位移"吞掉；pointerdown 在失焦前开火，稳收。
+    // preventDefault 同时掐掉后续合成 click，防止双触发。
+    searchToggle.addEventListener('pointerdown', (ev) => {
+        ev.preventDefault();
         const collapsed = searchInput.classList.toggle('harborCollapsed');
         searchToggle.classList.toggle('active', !collapsed);
         if (!collapsed) {
