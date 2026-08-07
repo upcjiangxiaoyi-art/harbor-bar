@@ -8,9 +8,5 @@
     "author": "Cohee1207 (原作) / 波哥 Fable5 × ripple (避风塘二改)",
     "version": "1.1.0",
     "homePage": "",
-    "auto_update": false,
-    "i18n": {
-        "zh-cn": "i18n/zh-cn.json",
-        "zh-tw": "i18n/zh-tw.json"
-    }
+    "auto_update": false
 }
