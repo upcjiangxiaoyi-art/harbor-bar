@@ -278,23 +278,31 @@ function addTopBar() {
     searchToggle.title = t`Search in chat`;
     searchToggle.tabIndex = 0;
     searchToggle.classList.add('right_menu_button');
-    // iOS 三保险 + 去重闸：
-    // - 键盘弹着时 click 会被"收键盘"吞掉 → 靠 pointerdown/touchend 兜住
-    // - iOS 上 pointerdown 的 preventDefault 拦不住补发的 click → 同一次
-    //   点击可能触发多个事件，350ms 内只认第一发，防止开了又关转圈圈
+    // v1.1.3 架构级修复：收起不再依赖点中图标。
+    // 输入框失焦（键盘收起/点了别处）→ 自动收起，绕开 iOS 所有点击吞噬问题。
+    // 收起时保留搜索词和高亮，方便收起后阅读命中结果；要清除高亮就
+    // 重新展开用输入框自带的 ✕ 清空。120ms 延迟让图标切换先行结算。
+    searchInput.addEventListener('blur', () => {
+        setTimeout(() => {
+            if (!searchInput.classList.contains('harborCollapsed')) {
+                searchInput.classList.add('harborCollapsed');
+                searchToggle.classList.remove('active');
+            }
+        }, 120);
+    });
+
+    // 图标开关保留作为备用门。iOS 会对同一次点击补发多个事件
+    // （pointerdown/touchend/click，间隔可达数百毫秒），600ms 内只认第一发。
     let harborLastToggle = 0;
     function harborToggleSearch(ev) {
         ev.preventDefault();
         const now = Date.now();
-        if (now - harborLastToggle < 350) return;
+        if (now - harborLastToggle < 600) return;
         harborLastToggle = now;
         const collapsed = searchInput.classList.toggle('harborCollapsed');
         searchToggle.classList.toggle('active', !collapsed);
         if (!collapsed) {
             searchInput.focus();
-        } else {
-            searchInput.value = '';
-            searchInChat('');
         }
     }
     searchToggle.addEventListener('pointerdown', harborToggleSearch);
