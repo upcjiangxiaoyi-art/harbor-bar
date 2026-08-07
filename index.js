@@ -278,11 +278,16 @@ function addTopBar() {
     searchToggle.title = t`Search in chat`;
     searchToggle.tabIndex = 0;
     searchToggle.classList.add('right_menu_button');
-    // pointerdown 而非 click：iOS 上键盘弹出时点图标，click 会被
-    // "收键盘+失焦+布局位移"吞掉；pointerdown 在失焦前开火，稳收。
-    // preventDefault 同时掐掉后续合成 click，防止双触发。
-    searchToggle.addEventListener('pointerdown', (ev) => {
+    // iOS 三保险 + 去重闸：
+    // - 键盘弹着时 click 会被"收键盘"吞掉 → 靠 pointerdown/touchend 兜住
+    // - iOS 上 pointerdown 的 preventDefault 拦不住补发的 click → 同一次
+    //   点击可能触发多个事件，350ms 内只认第一发，防止开了又关转圈圈
+    let harborLastToggle = 0;
+    function harborToggleSearch(ev) {
         ev.preventDefault();
+        const now = Date.now();
+        if (now - harborLastToggle < 350) return;
+        harborLastToggle = now;
         const collapsed = searchInput.classList.toggle('harborCollapsed');
         searchToggle.classList.toggle('active', !collapsed);
         if (!collapsed) {
@@ -291,7 +296,10 @@ function addTopBar() {
             searchInput.value = '';
             searchInChat('');
         }
-    });
+    }
+    searchToggle.addEventListener('pointerdown', harborToggleSearch);
+    searchToggle.addEventListener('touchend', harborToggleSearch, { passive: false });
+    searchToggle.addEventListener('click', harborToggleSearch);
 
     harborDock.append(searchToggle, searchInput);
     topBar.append(chatName, harborDock);
