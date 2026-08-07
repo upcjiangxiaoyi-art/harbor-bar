@@ -1,0 +1,16 @@
+{
+    "display_name": "避风塘 Harbor Bar",
+    "loading_order": 100,
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "css": "style.css",
+    "author": "Cohee1207 (原作) / 波哥 Fable5 × ripple (避风塘二改)",
+    "version": "1.1.0",
+    "homePage": "",
+    "auto_update": false,
+    "i18n": {
+        "zh-cn": "i18n/zh-cn.json",
+        "zh-tw": "i18n/zh-tw.json"
+    }
+}
