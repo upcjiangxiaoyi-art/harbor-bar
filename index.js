@@ -330,9 +330,9 @@ function harborApplyParkedStyle(el) {
     imp('bottom', 'auto');
     imp('width', 'auto');
     imp('min-width', 'auto');
-    imp('height', '24px');
-    imp('min-height', '24px');
-    imp('line-height', '24px');
+    imp('height', '20px');
+    imp('min-height', '20px');
+    imp('line-height', '20px');
     imp('padding', '0 3px');
     imp('font-size', '11px');
     try { el.style.boxShadow = 'none'; } catch {} // 不带 important：给泊内脉冲动画让路
@@ -350,7 +350,7 @@ function harborApplyParkedStyle(el) {
  * @returns {boolean} true = 制服还在
  */
 function harborStyleIntact(el) {
-    return el.style.position === 'static' && el.style.height === '24px';
+    return el.style.position === 'static' && el.style.height === '20px';
 }
 
 /**
