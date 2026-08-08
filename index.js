@@ -333,9 +333,9 @@ function harborApplyParkedStyle(el) {
     imp('height', '24px');
     imp('min-height', '24px');
     imp('line-height', '24px');
-    imp('padding', '0 9px');
+    imp('padding', '0 3px');
     imp('font-size', '11px');
-    imp('box-shadow', 'none');
+    try { el.style.boxShadow = 'none'; } catch {} // 不带 important：给泊内脉冲动画让路
     imp('z-index', 'auto');
     imp('margin', '0');
     imp('transform', 'none');
