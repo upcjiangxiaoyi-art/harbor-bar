@@ -410,6 +410,31 @@ function harborParkFloaters() {
 const harborParkDebounced = debounce(() => harborParkFloaters(), debounce_timeout.short);
 
 /**
+ * v1.2.5 海面锚定：生成期的自动滚动会渗漏到根滚动条（iOS 浏览器通病），
+ * 整张页面被拖着上滑，顶栏连车带港沉到浏览器工具栏后面。
+ * 根滚动条对 ST 而言永远不该动：一动就压回去。
+ * 唯一例外：正在输入时不出手——键盘弹出时浏览器要挪页面让输入框露头。
+ */
+function harborAnchorViewport() {
+    const isEditing = () => {
+        const ae = document.activeElement;
+        return !!ae && (ae.tagName === 'TEXTAREA' || ae.tagName === 'INPUT' || ae.isContentEditable);
+    };
+    const reset = () => {
+        if (isEditing()) return;
+        if (window.scrollY || document.documentElement.scrollTop) {
+            window.scrollTo(0, 0);
+        }
+    };
+    window.addEventListener('scroll', reset, { passive: true });
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', () => setTimeout(reset, 50));
+    }
+    // 开锚先压一次，把可能已经歪掉的页面归位。
+    reset();
+}
+
+/**
  * 开港：立即巡一次，再挂 body 观察员逮迟到的浮标
  * （ARB 的浮标最晚 4.2 秒后才创建，且设置开关可随时重造它们）。
  */
@@ -838,6 +863,7 @@ function restorePanelsState() {
         bindConnectionProfilesSelect();
         restorePanelsState();
         harborInstallParking();
+        harborAnchorViewport();
     });
     eventSource.on(event_types.ONLINE_STATUS_CHANGED, updateStatusDebounced);
 })();
