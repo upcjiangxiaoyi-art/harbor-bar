@@ -343,6 +343,17 @@ function harborApplyParkedStyle(el) {
     imp('cursor', 'pointer');
     imp('touch-action', 'manipulation');
     imp('flex', 'none');
+    // v1.2.3 泊位免避让：原插件生成期会让浮标缩边/隐身（改 opacity/宽度/位移），
+    // 车已入库不需要避让，这几项一并钉死，防止工作时在泊位里缩没。
+    imp('opacity', '1');
+    imp('visibility', 'visible');
+    imp('max-width', 'none');
+    imp('max-height', 'none');
+    imp('overflow', 'hidden');
+    imp('pointer-events', 'auto');
+    if (getComputedStyle(el).display === 'none') {
+        imp('display', 'inline-block');
+    }
 }
 
 /**
@@ -351,7 +362,14 @@ function harborApplyParkedStyle(el) {
  * @returns {boolean} true = 制服还在
  */
 function harborStyleIntact(el) {
-    return el.style.position === 'static' && el.style.height === '20px';
+    // v1.2.3：只查 position/height 有盲区——原插件避让时改的是
+    // opacity/visibility/display/位置，这里一并查，缺一项就重新穿制服。
+    return el.style.position === 'static'
+        && el.style.height === '20px'
+        && el.style.opacity === '1'
+        && el.style.visibility === 'visible'
+        && getComputedStyle(el).display !== 'none'
+        && el.parentElement === harborDock;
 }
 
 /**
@@ -362,7 +380,15 @@ function harborStyleIntact(el) {
 function harborParkFloaters() {
     for (const car of HARBOR_REGISTRY) {
         const el = /** @type {HTMLElement} */ (document.querySelector(car.selector));
-        if (!el || el.dataset.harborParked === '1') {
+        if (!el) {
+            continue;
+        }
+        if (el.dataset.harborParked === '1') {
+            // v1.2.3 兜底：车牌还在但车被原插件拖出泊位（重挂到 body 等），抓回来。
+            if (el.parentElement !== harborDock) {
+                harborDock.appendChild(el);
+                harborApplyParkedStyle(el);
+            }
             continue;
         }
         el.dataset.harborParked = '1';
