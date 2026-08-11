@@ -147,7 +147,10 @@ body.reduced-motion #extensionSideBar {
     border-radius: 10px 10px 0 0;
     background-color: var(--SmartThemeBlurTintColor);
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
-    height: var(--bottomFormBlockSize);
+    /* v1.2.4 弹性顶棚：泊内浮标工作时会变宽触发换行，
+       死高度会把两行内容削头。改为最小高度，装不下就长高。 */
+    height: auto;
+    min-height: var(--bottomFormBlockSize);
     padding: 0 10px;
     gap: 10px;
     font-size: calc(var(--mainFontSize) * 0.9);
