@@ -138,7 +138,10 @@ body.reduced-motion #extensionSideBar {
 #extensionTopBar {
     display: flex;
     flex-direction: row;
-    flex-wrap: wrap;
+    /* v1.3.0 一行铁律（军规由江提出）：港口一寸不长。
+       永不换行、死高度、溢出裁切——谁要空间从邻居身上挤，不许竖着长。 */
+    flex-wrap: nowrap;
+    overflow: hidden;
     flex-shrink: 0;
     align-content: center;
     align-items: baseline;
@@ -275,4 +278,10 @@ body.movingUI #extensionTopBar {
 /* 入库浮标的公共兜底（主装束由 JS 行内 !important 负责） */
 #extensionHarborDock [data-harbor-parked="1"] {
     white-space: nowrap;
+}
+
+/* v1.3.0 打字让位（军规由江提出）：放大镜展开时，
+   泊内车队整体暂时隐身，空间全部让给打字框；收起后原地回泊。 */
+#extensionHarborDock:has(> #extensionTopBarSearchInput:not(.harborCollapsed)) [data-harbor-parked="1"] {
+    display: none !important;
 }

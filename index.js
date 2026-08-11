@@ -343,6 +343,15 @@ function harborApplyParkedStyle(el) {
     imp('cursor', 'pointer');
     imp('touch-action', 'manipulation');
     imp('flex', 'none');
+    // v1.3.0 车宽封顶（军规由江提出）：浮标工作态会加宽自己（闪灯/换徽章），
+    // 泊内一律封顶——多出来的裁掉，灯照样闪，位置不许多占。
+    // 注意不钉 display：打字让位规则（CSS 层）需要临时藏车。
+    imp('opacity', '1');
+    imp('visibility', 'visible');
+    imp('max-width', '88px');
+    imp('max-height', '20px');
+    imp('overflow', 'hidden');
+    imp('pointer-events', 'auto');
 }
 
 /**
@@ -351,7 +360,13 @@ function harborApplyParkedStyle(el) {
  * @returns {boolean} true = 制服还在
  */
 function harborStyleIntact(el) {
-    return el.style.position === 'static' && el.style.height === '20px';
+    // v1.3.0：不查 display——打字让位时车队合法隐身，查了会自己打自己。
+    return el.style.position === 'static'
+        && el.style.height === '20px'
+        && el.style.maxWidth === '88px'
+        && el.style.opacity === '1'
+        && el.style.visibility === 'visible'
+        && el.parentElement === harborDock;
 }
 
 /**
@@ -362,7 +377,15 @@ function harborStyleIntact(el) {
 function harborParkFloaters() {
     for (const car of HARBOR_REGISTRY) {
         const el = /** @type {HTMLElement} */ (document.querySelector(car.selector));
-        if (!el || el.dataset.harborParked === '1') {
+        if (!el) {
+            continue;
+        }
+        if (el.dataset.harborParked === '1') {
+            // v1.2.3 兜底：车牌还在但车被原插件拖出泊位（重挂到 body 等），抓回来。
+            if (el.parentElement !== harborDock) {
+                harborDock.appendChild(el);
+                harborApplyParkedStyle(el);
+            }
             continue;
         }
         el.dataset.harborParked = '1';
@@ -382,6 +405,31 @@ function harborParkFloaters() {
 }
 
 const harborParkDebounced = debounce(() => harborParkFloaters(), debounce_timeout.short);
+
+/**
+ * v1.2.5 海面锚定：生成期的自动滚动会渗漏到根滚动条（iOS 浏览器通病），
+ * 整张页面被拖着上滑，顶栏连车带港沉到浏览器工具栏后面。
+ * 根滚动条对 ST 而言永远不该动：一动就压回去。
+ * 唯一例外：正在输入时不出手——键盘弹出时浏览器要挪页面让输入框露头。
+ */
+function harborAnchorViewport() {
+    const isEditing = () => {
+        const ae = document.activeElement;
+        return !!ae && (ae.tagName === 'TEXTAREA' || ae.tagName === 'INPUT' || ae.isContentEditable);
+    };
+    const reset = () => {
+        if (isEditing()) return;
+        if (window.scrollY || document.documentElement.scrollTop) {
+            window.scrollTo(0, 0);
+        }
+    };
+    window.addEventListener('scroll', reset, { passive: true });
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', () => setTimeout(reset, 50));
+    }
+    // 开锚先压一次，把可能已经歪掉的页面归位。
+    reset();
+}
 
 /**
  * 开港：立即巡一次，再挂 body 观察员逮迟到的浮标
@@ -812,6 +860,7 @@ function restorePanelsState() {
         bindConnectionProfilesSelect();
         restorePanelsState();
         harborInstallParking();
+        harborAnchorViewport();
     });
     eventSource.on(event_types.ONLINE_STATUS_CHANGED, updateStatusDebounced);
 })();
