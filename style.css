@@ -252,7 +252,12 @@ body.movingUI #extensionTopBar {
     align-items: center;
     align-self: center;
     gap: 6px;
-    flex-shrink: 1;
+    /* v1.3.1 净息优先权：空间紧张时聊天名先让位（缩成省略号），
+       车队保持完整不被压——压成半张脸的小海螺不体面。
+       flex-shrink:0 = 车队免缩特权；max-width 是极端兜底，
+       车实在太多超过六成宽度时才在队内裁切。 */
+    flex-shrink: 0;
+    max-width: 60%;
     min-width: 0;
     overflow: hidden;
 }
