@@ -35,6 +35,7 @@ const harborDock = document.createElement('div');
 const HARBOR_REGISTRY = [
     { selector: '#adr048-fab', name: 'Arrebol D 小红霞' },
     { selector: '#ipe-chat-quick-entry', name: 'IPE 小海螺' },
+    { selector: '#xyh_floater', name: 'Luciole 小萤火' },
 ];
 const connectionProfiles = document.createElement('div');
 const connectionProfilesStatus = document.createElement('div');
