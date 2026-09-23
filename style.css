@@ -291,22 +291,26 @@ body.movingUI #extensionTopBar {
     display: none !important;
 }
 
-/* v1.3.3 叠层美化适配：#chat 被美化改成绝对定位铺满时（JS 给 #sheld 挂
-   harborOverlay），港口和连接面板一起浮到 #top-bar 下沿，压在聊天区之上。 */
-body #sheld.harborOverlay > #extensionTopBar,
-body #sheld.harborOverlay > #extensionConnectionProfiles {
-    position: absolute;
-    left: 0;
-    right: 0;
-    margin-left: auto;
-    margin-right: auto;
-    z-index: 51;
+/* v1.3.3/1.3.4 叠层美化适配：#chat 被美化改成绝对定位铺满时，JS 把港口和
+   连接面板搬到 <body> 下（body 挂 harborOverlay），fixed 浮在 #top-bar 下沿，
+   层级压过顶栏装饰（3005）。上方抽屉打开时让回 3004，不挡抽屉面板。 */
+body.harborOverlay > #extensionTopBar,
+body.harborOverlay > #extensionConnectionProfiles {
+    position: fixed;
+    left: var(--harborOverlayLeft, 0px);
+    width: var(--harborOverlayWidth, 100%);
+    z-index: 3006;
 }
 
-body #sheld.harborOverlay > #extensionTopBar {
+body.harborOverlay > #extensionTopBar {
     top: var(--harborOverlayTop, 0px);
 }
 
-body #sheld.harborOverlay > #extensionConnectionProfiles {
+body.harborOverlay > #extensionConnectionProfiles {
     top: calc(var(--harborOverlayTop, 0px) + var(--bottomFormBlockSize) - 1px);
+}
+
+body.harborOverlay:has(#top-settings-holder .drawer-content.openDrawer) > #extensionTopBar,
+body.harborOverlay:has(#top-settings-holder .drawer-content.openDrawer) > #extensionConnectionProfiles {
+    z-index: 3004;
 }

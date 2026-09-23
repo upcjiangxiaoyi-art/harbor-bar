@@ -432,35 +432,48 @@ function harborAnchorViewport() {
 }
 
 /**
- * v1.3.3 叠层美化适配（如「竟夕相思」）：有的美化把 #chat 改成绝对定位铺满
- * #sheld，顶栏再叠一层 z-index 很高的 #top-bar。港口是普通文档流元素，
- * 会被聊天区整块压在底下——人在，只是看不见。
- * 探测到 #chat 脱离文档流时，港口也跟着浮起来：贴在 #top-bar 下沿，
- * 层级压过聊天区和顶栏装饰。普通美化下什么都不改。
+ * v1.3.3/1.3.4 叠层美化适配（如「竟夕相思」）：有的美化把 #chat 改成绝对定位
+ * 铺满 #sheld，顶栏再叠一层。港口是普通文档流元素，会被聊天区整块压住。
+ * 而 #sheld 自带 z-index:30 自成一层，#top-bar / #top-settings-holder 在
+ * 它外面的 3005 层——港口待在 #sheld 里，z-index 给多高都翻不过去，
+ * 看得见也点不着。所以探测到 #chat 脱离文档流时，港口（连同连接面板）
+ * 整个搬到 <body> 下，fixed 浮在 #top-bar 下沿；普通美化下原样搬回 #sheld。
  */
 function harborAdaptLayout() {
     const topSettingsBar = document.getElementById('top-bar');
+    const root = document.documentElement;
     const apply = () => {
         const position = getComputedStyle(chat).position;
         const overlay = position === 'absolute' || position === 'fixed';
-        sheld.classList.toggle('harborOverlay', overlay);
+        document.body.classList.toggle('harborOverlay', overlay);
         if (!overlay) {
-            sheld.style.removeProperty('--harborOverlayTop');
+            if (topBar.parentElement !== sheld) {
+                sheld.insertBefore(topBar, chat);
+                sheld.insertBefore(connectionProfiles, chat);
+            }
             return;
         }
-        let top = 0;
-        if (topSettingsBar && getComputedStyle(topSettingsBar).display !== 'none') {
-            top = Math.max(0, topSettingsBar.getBoundingClientRect().bottom - sheld.getBoundingClientRect().top);
+        if (topBar.parentElement !== document.body) {
+            document.body.append(topBar, connectionProfiles);
         }
-        sheld.style.setProperty('--harborOverlayTop', `${Math.round(top)}px`);
+        const sheldRect = sheld.getBoundingClientRect();
+        let top = Math.max(0, sheldRect.top);
+        if (topSettingsBar && getComputedStyle(topSettingsBar).display !== 'none') {
+            top = Math.max(top, topSettingsBar.getBoundingClientRect().bottom);
+        }
+        root.style.setProperty('--harborOverlayTop', `${Math.round(top)}px`);
+        root.style.setProperty('--harborOverlayLeft', `${Math.round(sheldRect.left)}px`);
+        root.style.setProperty('--harborOverlayWidth', `${Math.round(sheldRect.width)}px`);
     };
     const applyDebounced = debounce(apply, 200);
     apply();
-    // 换美化 = 改 <head> 里的 style；旋转屏幕/顶栏变高也要重算。
+    // 换美化 = 改 <head> 里的 style；旋转屏幕/顶栏变高/拖宽聊天区也要重算。
     new MutationObserver(applyDebounced).observe(document.head, { childList: true, subtree: true, characterData: true });
     window.addEventListener('resize', applyDebounced);
-    if (topSettingsBar && typeof ResizeObserver === 'function') {
-        new ResizeObserver(applyDebounced).observe(topSettingsBar);
+    if (typeof ResizeObserver === 'function') {
+        const resizeObserver = new ResizeObserver(applyDebounced);
+        resizeObserver.observe(sheld);
+        if (topSettingsBar) resizeObserver.observe(topSettingsBar);
     }
 }
 
