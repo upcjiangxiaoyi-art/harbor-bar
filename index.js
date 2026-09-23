@@ -433,7 +433,8 @@ function harborAnchorViewport() {
 
 /**
  * v1.3.3/1.3.4/1.3.6 叠层美化适配：有的美化把 #chat 改成绝对定位铺满 #sheld
- * （竟夕相思），有的把 #top-bar 加高垂到 #sheld 上面（梦胧灯），港口都会被压住。
+ * （竟夕相思），有的把 #top-bar 加高垂到 #sheld 上面（梦胧灯），有的在顶栏
+ * 伪元素上挂花边垂下来（Butterfly Teardrop），港口都会被压住。
  * 而 #sheld 自带 z-index:30 自成一层，#top-bar / #top-settings-holder 在
  * 它外面的 3005 层——港口待在 #sheld 里，z-index 给多高都翻不过去，
  * 看得见也点不着。所以探测到港口会被压住时，港口（连同连接面板）
@@ -458,8 +459,9 @@ function harborAdaptLayout() {
         const chatDetached = ['absolute', 'fixed'].includes(getComputedStyle(chat).position);
         const topBarVisible = !!topSettingsBar && getComputedStyle(topSettingsBar).display !== 'none';
         const topBarBottom = topBarVisible ? topSettingsBar.getBoundingClientRect().bottom : 0;
-        const coveredByTopBar = topBarBottom - sheld.getBoundingClientRect().top > 2;
-        const overlay = chatDetached || coveredByTopBar;
+        const hangingTopBar = !chatDetached && topBarBottom - sheld.getBoundingClientRect().top > 2;
+        const buriedClearY = chatDetached || hangingTopBar ? null : findTopBarDecorClearY();
+        const overlay = chatDetached || hangingTopBar || buriedClearY !== null;
         document.body.classList.toggle('harborOverlay', overlay);
         if (!overlay) {
             if (topBar.parentElement !== sheld) {
@@ -475,11 +477,37 @@ function harborAdaptLayout() {
         // ① 聊天区铺满：原位就在顶栏底下，得挪到 #top-bar 下沿。
         // ② 顶栏垂下来：加高的部分往往只有上半截有花边、下半截透明，
         //    贴 #top-bar 下沿会掉进空白里——留在原位（#sheld 上沿），只是层级浮到顶栏上面。
-        const top = chatDetached ? Math.max(0, sheldRect.top, topBarBottom) : Math.max(0, sheldRect.top);
+        // ③ 伪元素花边：挪到花边点不中的第一行，别压在花边的字上。
+        let top = Math.max(0, sheldRect.top);
+        if (chatDetached) top = Math.max(top, topBarBottom);
+        if (buriedClearY !== null) top = Math.max(top, buriedClearY);
         root.style.setProperty('--harborOverlayTop', `${Math.round(top)}px`);
         root.style.setProperty('--harborOverlayLeft', `${Math.round(sheldRect.left)}px`);
         root.style.setProperty('--harborOverlayWidth', `${Math.round(sheldRect.width)}px`);
     };
+    // ③ 顶栏的 ::before/::after 花边垂下来盖住港口（Butterfly Teardrop：60px 高的
+    //    ::after 挂在 #top-bar 上）。伪元素量不到尺寸，干脆实地点一下：
+    //    把港口放回原位，横着取几个点，看点中的是不是顶栏（伪元素的点击算在宿主头上）。
+    //    只认 #top-bar / #top-settings-holder 本体，抽屉面板等不算，免得开着抽屉时误判。
+    //    港口没被压 → null；被压 → 往下逐行探，返回花边盖不到的第一行 y。
+    function findTopBarDecorClearY() {
+        if (topBar.parentElement !== sheld) {
+            sheld.insertBefore(topBar, chat);
+            sheld.insertBefore(connectionProfiles, chat);
+        }
+        const rect = topBar.getBoundingClientRect();
+        if (rect.width < 1 || rect.height < 1) return null;
+        const rowCovered = (y) => [0.1, 0.3, 0.5, 0.7, 0.9].some((fraction) => {
+            const hit = document.elementFromPoint(rect.left + rect.width * fraction, y);
+            if (!hit || topBar.contains(hit) || hit.closest('.drawer-content')) return false;
+            return !!hit.closest('#top-bar, #top-settings-holder');
+        });
+        if (!rowCovered(rect.top + rect.height / 2)) return null;
+        let y = rect.top + rect.height / 2;
+        const limit = Math.min(window.innerHeight / 2, rect.top + 300);
+        while (y < limit && rowCovered(y)) y += 2;
+        return y;
+    }
     const applyDebounced = debounce(apply, 200);
     apply();
     // 换美化 = 改 <head> 里的 style；旋转屏幕/顶栏变高/拖宽聊天区也要重算。
