@@ -484,6 +484,9 @@ function harborAdaptLayout() {
         root.style.setProperty('--harborOverlayTop', `${Math.round(top)}px`);
         root.style.setProperty('--harborOverlayLeft', `${Math.round(sheldRect.left)}px`);
         root.style.setProperty('--harborOverlayWidth', `${Math.round(sheldRect.width)}px`);
+        // v1.3.9 连接面板贴港口实际下沿，不靠公式推算：有的美化会给港口加 margin
+        // （海盐可颂：margin-top 一个顶栏高），公式算不进去，面板就飞上去压住港口。
+        root.style.setProperty('--harborProfilesTop', `${Math.round(topBar.getBoundingClientRect().bottom)}px`);
     };
     // ③ 顶栏的 ::before/::after 花边垂下来盖住港口（Butterfly Teardrop：60px 高的
     //    ::after 挂在 #top-bar 上）。伪元素量不到尺寸，干脆实地点一下：
@@ -521,6 +524,7 @@ function harborAdaptLayout() {
     if (typeof ResizeObserver === 'function') {
         const resizeObserver = new ResizeObserver(applyDebounced);
         resizeObserver.observe(sheld);
+        resizeObserver.observe(topBar);
         if (topSettingsBar) resizeObserver.observe(topSettingsBar);
     }
 }

@@ -309,7 +309,8 @@ body.harborOverlay > #extensionTopBar {
 }
 
 body.harborOverlay > #extensionConnectionProfiles {
-    top: calc(var(--harborOverlayTop, 0px) + var(--bottomFormBlockSize) - 1px);
+    /* 贴港口实测下沿（JS 量），自身的 margin-top:-1px 负责和港口压一条缝 */
+    top: var(--harborProfilesTop, calc(var(--harborOverlayTop, 0px) + var(--bottomFormBlockSize)));
 }
 
 body.harborOverlay:has(#top-settings-holder .drawer-content.openDrawer) > #extensionTopBar,
