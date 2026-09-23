@@ -295,25 +295,29 @@ body.movingUI #extensionTopBar {
 
 /* v1.3.3/1.3.4 叠层美化适配：#chat 被美化改成绝对定位铺满时，JS 把港口和
    连接面板搬到 <body> 下（body 挂 harborOverlay），fixed 浮在 #top-bar 下沿，
-   层级压过顶栏装饰（3005）。上方抽屉打开时让回 3004，不挡抽屉面板。 */
+   层级压过顶栏装饰（3005）。上方抽屉打开时让回 3004，不挡抽屉面板。
+   v1.3.10 全部 !important：有的美化自己给港口写了 top/z-index !important
+   （远方：top:3.2px、z-index:1000），浮起时位置只能由我们说了算。 */
 body.harborOverlay > #extensionTopBar,
 body.harborOverlay > #extensionConnectionProfiles {
-    position: fixed;
-    left: var(--harborOverlayLeft, 0px);
-    width: var(--harborOverlayWidth, 100%);
-    z-index: 3006;
+    position: fixed !important;
+    left: var(--harborOverlayLeft, 0px) !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: var(--harborOverlayWidth, 100%) !important;
+    z-index: 3006 !important;
 }
 
 body.harborOverlay > #extensionTopBar {
-    top: var(--harborOverlayTop, 0px);
+    top: var(--harborOverlayTop, 0px) !important;
 }
 
 body.harborOverlay > #extensionConnectionProfiles {
     /* 贴港口实测下沿（JS 量），自身的 margin-top:-1px 负责和港口压一条缝 */
-    top: var(--harborProfilesTop, calc(var(--harborOverlayTop, 0px) + var(--bottomFormBlockSize)));
+    top: var(--harborProfilesTop, calc(var(--harborOverlayTop, 0px) + var(--bottomFormBlockSize))) !important;
 }
 
 body.harborOverlay:has(#top-settings-holder .drawer-content.openDrawer) > #extensionTopBar,
 body.harborOverlay:has(#top-settings-holder .drawer-content.openDrawer) > #extensionConnectionProfiles {
-    z-index: 3004;
+    z-index: 3004 !important;
 }
