@@ -309,7 +309,8 @@ body.harborOverlay > #extensionConnectionProfiles {
 }
 
 body.harborOverlay > #extensionTopBar {
-    top: var(--harborOverlayTop, 0px) !important;
+    /* --harbor-offset-y：留给用户的微调旋钮，在美化 CSS 里写 :root { --harbor-offset-y: -10px; } 即可上下挪 */
+    top: calc(var(--harborOverlayTop, 0px) + var(--harbor-offset-y, 0px)) !important;
 }
 
 body.harborOverlay > #extensionConnectionProfiles {

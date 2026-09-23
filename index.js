@@ -505,8 +505,23 @@ function harborAdaptLayout() {
             if (!hit || topBar.contains(hit) || hit.closest('.drawer-content')) return false;
             return !!hit.closest('#top-bar, #top-settings-holder');
         });
-        if (!rowCovered(rect.top + rect.height / 2)) return null;
-        let y = rect.top + rect.height / 2;
+        const midY = rect.top + rect.height / 2;
+        if (!rowCovered(midY)) return null;
+        // v1.3.11 分两种压法：
+        // · 被顶栏「本体盒子」盖住（远方：#top-settings-holder 本身 80px 高，背景图下半截
+        //   是和页面融为一色的山水）→ 同梦胧灯，下半截多半是视觉留白，留在原位浮起即可；
+        // · 被「伪元素」垂下来盖住（Butterfly：点中的是 #top-bar，但点位在它本体盒子之外）
+        //   → 花边本身就是装饰，挪到它下面，别压字。
+        const coveredByOwnBox = [0.1, 0.3, 0.5, 0.7, 0.9].some((fraction) => {
+            const x = rect.left + rect.width * fraction;
+            const hit = document.elementFromPoint(x, midY);
+            const host = hit && !topBar.contains(hit) && hit.closest('#top-bar, #top-settings-holder');
+            if (!host) return false;
+            const box = host.getBoundingClientRect();
+            return midY >= box.top && midY <= box.bottom && x >= box.left && x <= box.right;
+        });
+        if (coveredByOwnBox) return rect.top;
+        let y = midY;
         const limit = Math.min(window.innerHeight / 2, rect.top + 300);
         while (y < limit && rowCovered(y)) y += 2;
         return y;
