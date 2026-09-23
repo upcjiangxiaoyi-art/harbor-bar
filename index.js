@@ -432,11 +432,11 @@ function harborAnchorViewport() {
 }
 
 /**
- * v1.3.3/1.3.4 叠层美化适配（如「竟夕相思」）：有的美化把 #chat 改成绝对定位
- * 铺满 #sheld，顶栏再叠一层。港口是普通文档流元素，会被聊天区整块压住。
+ * v1.3.3/1.3.4/1.3.6 叠层美化适配：有的美化把 #chat 改成绝对定位铺满 #sheld
+ * （竟夕相思），有的把 #top-bar 加高垂到 #sheld 上面（梦胧灯），港口都会被压住。
  * 而 #sheld 自带 z-index:30 自成一层，#top-bar / #top-settings-holder 在
  * 它外面的 3005 层——港口待在 #sheld 里，z-index 给多高都翻不过去，
- * 看得见也点不着。所以探测到 #chat 脱离文档流时，港口（连同连接面板）
+ * 看得见也点不着。所以探测到港口会被压住时，港口（连同连接面板）
  * 整个搬到 <body> 下，fixed 浮在 #top-bar 下沿；普通美化下原样搬回 #sheld。
  */
 function harborAdaptLayout() {
@@ -451,8 +451,15 @@ function harborAdaptLayout() {
             root.style.setProperty('--harborBarBg', barStyle.backgroundColor);
             root.style.setProperty('--harborBarBackdrop', barStyle.backdropFilter || barStyle.webkitBackdropFilter || 'none');
         }
+        // 需要浮起的两种情形：
+        // ① #chat 被改成绝对定位铺满 #sheld（竟夕相思）；
+        // ② #top-bar 被美化加高，垂下来盖住 #sheld 顶端（梦胧灯：顶栏 100px）。
+        //    默认布局里 #top-bar 下沿不超过 #sheld 上沿，不会误判。
         const position = getComputedStyle(chat).position;
-        const overlay = position === 'absolute' || position === 'fixed';
+        const topBarVisible = !!topSettingsBar && getComputedStyle(topSettingsBar).display !== 'none';
+        const topBarBottom = topBarVisible ? topSettingsBar.getBoundingClientRect().bottom : 0;
+        const coveredByTopBar = topBarBottom - sheld.getBoundingClientRect().top > 2;
+        const overlay = position === 'absolute' || position === 'fixed' || coveredByTopBar;
         document.body.classList.toggle('harborOverlay', overlay);
         if (!overlay) {
             if (topBar.parentElement !== sheld) {
@@ -465,10 +472,7 @@ function harborAdaptLayout() {
             document.body.append(topBar, connectionProfiles);
         }
         const sheldRect = sheld.getBoundingClientRect();
-        let top = Math.max(0, sheldRect.top);
-        if (topSettingsBar && getComputedStyle(topSettingsBar).display !== 'none') {
-            top = Math.max(top, topSettingsBar.getBoundingClientRect().bottom);
-        }
+        const top = Math.max(0, sheldRect.top, topBarBottom);
         root.style.setProperty('--harborOverlayTop', `${Math.round(top)}px`);
         root.style.setProperty('--harborOverlayLeft', `${Math.round(sheldRect.left)}px`);
         root.style.setProperty('--harborOverlayWidth', `${Math.round(sheldRect.width)}px`);
