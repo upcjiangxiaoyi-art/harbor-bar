@@ -455,11 +455,11 @@ function harborAdaptLayout() {
         // ① #chat 被改成绝对定位铺满 #sheld（竟夕相思）；
         // ② #top-bar 被美化加高，垂下来盖住 #sheld 顶端（梦胧灯：顶栏 100px）。
         //    默认布局里 #top-bar 下沿不超过 #sheld 上沿，不会误判。
-        const position = getComputedStyle(chat).position;
+        const chatDetached = ['absolute', 'fixed'].includes(getComputedStyle(chat).position);
         const topBarVisible = !!topSettingsBar && getComputedStyle(topSettingsBar).display !== 'none';
         const topBarBottom = topBarVisible ? topSettingsBar.getBoundingClientRect().bottom : 0;
         const coveredByTopBar = topBarBottom - sheld.getBoundingClientRect().top > 2;
-        const overlay = position === 'absolute' || position === 'fixed' || coveredByTopBar;
+        const overlay = chatDetached || coveredByTopBar;
         document.body.classList.toggle('harborOverlay', overlay);
         if (!overlay) {
             if (topBar.parentElement !== sheld) {
@@ -472,7 +472,10 @@ function harborAdaptLayout() {
             document.body.append(topBar, connectionProfiles);
         }
         const sheldRect = sheld.getBoundingClientRect();
-        const top = Math.max(0, sheldRect.top, topBarBottom);
+        // ① 聊天区铺满：原位就在顶栏底下，得挪到 #top-bar 下沿。
+        // ② 顶栏垂下来：加高的部分往往只有上半截有花边、下半截透明，
+        //    贴 #top-bar 下沿会掉进空白里——留在原位（#sheld 上沿），只是层级浮到顶栏上面。
+        const top = chatDetached ? Math.max(0, sheldRect.top, topBarBottom) : Math.max(0, sheldRect.top);
         root.style.setProperty('--harborOverlayTop', `${Math.round(top)}px`);
         root.style.setProperty('--harborOverlayLeft', `${Math.round(sheldRect.left)}px`);
         root.style.setProperty('--harborOverlayWidth', `${Math.round(sheldRect.width)}px`);
