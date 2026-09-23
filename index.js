@@ -432,6 +432,39 @@ function harborAnchorViewport() {
 }
 
 /**
+ * v1.3.3 叠层美化适配（如「竟夕相思」）：有的美化把 #chat 改成绝对定位铺满
+ * #sheld，顶栏再叠一层 z-index 很高的 #top-bar。港口是普通文档流元素，
+ * 会被聊天区整块压在底下——人在，只是看不见。
+ * 探测到 #chat 脱离文档流时，港口也跟着浮起来：贴在 #top-bar 下沿，
+ * 层级压过聊天区和顶栏装饰。普通美化下什么都不改。
+ */
+function harborAdaptLayout() {
+    const topSettingsBar = document.getElementById('top-bar');
+    const apply = () => {
+        const position = getComputedStyle(chat).position;
+        const overlay = position === 'absolute' || position === 'fixed';
+        sheld.classList.toggle('harborOverlay', overlay);
+        if (!overlay) {
+            sheld.style.removeProperty('--harborOverlayTop');
+            return;
+        }
+        let top = 0;
+        if (topSettingsBar && getComputedStyle(topSettingsBar).display !== 'none') {
+            top = Math.max(0, topSettingsBar.getBoundingClientRect().bottom - sheld.getBoundingClientRect().top);
+        }
+        sheld.style.setProperty('--harborOverlayTop', `${Math.round(top)}px`);
+    };
+    const applyDebounced = debounce(apply, 200);
+    apply();
+    // 换美化 = 改 <head> 里的 style；旋转屏幕/顶栏变高也要重算。
+    new MutationObserver(applyDebounced).observe(document.head, { childList: true, subtree: true, characterData: true });
+    window.addEventListener('resize', applyDebounced);
+    if (topSettingsBar && typeof ResizeObserver === 'function') {
+        new ResizeObserver(applyDebounced).observe(topSettingsBar);
+    }
+}
+
+/**
  * 开港：立即巡一次，再挂 body 观察员逮迟到的浮标
  * （ARB 的浮标最晚 4.2 秒后才创建，且设置开关可随时重造它们）。
  */
@@ -861,6 +894,7 @@ function restorePanelsState() {
         restorePanelsState();
         harborInstallParking();
         harborAnchorViewport();
+        harborAdaptLayout();
     });
     eventSource.on(event_types.ONLINE_STATUS_CHANGED, updateStatusDebounced);
 })();
