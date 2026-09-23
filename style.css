@@ -21,8 +21,9 @@ body #sheld.flexPatch #chat {
     align-items: center;
     width: 100%;
     border: 1px solid var(--SmartThemeBorderColor);
-    background-color: var(--SmartThemeBlurTintColor);
-    backdrop-filter: blur(var(--SmartThemeBlurStrength));
+    background-color: var(--harborBarBg, var(--SmartThemeBlurTintColor));
+    backdrop-filter: var(--harborBarBackdrop, blur(var(--SmartThemeBlurStrength)));
+    -webkit-backdrop-filter: var(--harborBarBackdrop, blur(var(--SmartThemeBlurStrength)));
     height: calc(var(--bottomFormBlockSize) * 0.75);
     padding: 0 10px;
     gap: 10px;
@@ -148,8 +149,9 @@ body.reduced-motion #extensionSideBar {
     width: 100%;
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 10px 10px 0 0;
-    background-color: var(--SmartThemeBlurTintColor);
-    backdrop-filter: blur(var(--SmartThemeBlurStrength));
+    background-color: var(--harborBarBg, var(--SmartThemeBlurTintColor));
+    backdrop-filter: var(--harborBarBackdrop, blur(var(--SmartThemeBlurStrength)));
+    -webkit-backdrop-filter: var(--harborBarBackdrop, blur(var(--SmartThemeBlurStrength)));
     height: var(--bottomFormBlockSize);
     padding: 0 10px;
     gap: 10px;

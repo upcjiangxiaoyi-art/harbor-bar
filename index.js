@@ -441,8 +441,16 @@ function harborAnchorViewport() {
  */
 function harborAdaptLayout() {
     const topSettingsBar = document.getElementById('top-bar');
-    const root = document.documentElement;
+    // 变量写在 body 上：<html> 的 style 归 ST 主题色用，我们要监听它，不能自己也往上写。
+    const root = document.body;
     const apply = () => {
+        // v1.3.5 底色随美化：照抄 #top-bar 的底色和毛玻璃。美化把顶栏做成
+        // 透明，港口也透明；普通美化下两者本来就是同一个主题色，看不出变化。
+        if (topSettingsBar) {
+            const barStyle = getComputedStyle(topSettingsBar);
+            root.style.setProperty('--harborBarBg', barStyle.backgroundColor);
+            root.style.setProperty('--harborBarBackdrop', barStyle.backdropFilter || barStyle.webkitBackdropFilter || 'none');
+        }
         const position = getComputedStyle(chat).position;
         const overlay = position === 'absolute' || position === 'fixed';
         document.body.classList.toggle('harborOverlay', overlay);
@@ -469,6 +477,11 @@ function harborAdaptLayout() {
     apply();
     // 换美化 = 改 <head> 里的 style；旋转屏幕/顶栏变高/拖宽聊天区也要重算。
     new MutationObserver(applyDebounced).observe(document.head, { childList: true, subtree: true, characterData: true });
+    // 在设置面板里调主题色/毛玻璃，ST 改的是 <html> 的 style 和 body 的 class。
+    // （我们自己只在 body 上 toggle 一个已是该值的 class 时不产生变动，不会自激。）
+    const themeObserver = new MutationObserver(applyDebounced);
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['style', 'class'] });
+    themeObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
     window.addEventListener('resize', applyDebounced);
     if (typeof ResizeObserver === 'function') {
         const resizeObserver = new ResizeObserver(applyDebounced);
