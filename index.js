@@ -444,6 +444,20 @@ function harborAdaptLayout() {
     const topSettingsBar = document.getElementById('top-bar');
     // 变量写在 body 上：<html> 的 style 归 ST 主题色用，我们要监听它，不能自己也往上写。
     const root = document.body;
+    // v1.3.12 「要不要浮」只在换美化时判一次（mode），缩放/键盘只更新坐标。
+    // 以前每次 resize 都重判：iOS 弹键盘会把整页顶上去（编辑中锚点不归位），
+    // 这时 #top-bar 钉在屏幕上不动、#sheld 被顶高，一量就误判成「顶栏垂下来」，
+    // 普通美化里港口也浮起来、钉到被顶高的位置——吞掉抽屉标题栏，或者往下飘。
+    let mode = null; // { overlay, chatDetached, buriedOffset }
+    let modeDirty = true;
+    let retryTimer = null;
+    const retryLater = () => {
+        clearTimeout(retryTimer);
+        retryTimer = setTimeout(() => applyDebounced(), 400);
+    };
+    // 页面被顶歪（键盘/iOS 滚动）或抽屉开着时量出来的数都不可信，等它归位再量。
+    const pageShifted = () => !!(window.scrollY || document.documentElement.scrollTop || document.body.scrollTop);
+    const drawerOpen = () => !!document.querySelector('#top-settings-holder .drawer-content.openDrawer');
     const apply = () => {
         // v1.3.5 底色随美化：照抄 #top-bar 的底色和毛玻璃。美化把顶栏做成
         // 透明，港口也透明；普通美化下两者本来就是同一个主题色，看不出变化。
@@ -452,18 +466,36 @@ function harborAdaptLayout() {
             root.style.setProperty('--harborBarBg', barStyle.backgroundColor);
             root.style.setProperty('--harborBarBackdrop', barStyle.backdropFilter || barStyle.webkitBackdropFilter || 'none');
         }
-        // 需要浮起的两种情形：
-        // ① #chat 被改成绝对定位铺满 #sheld（竟夕相思）；
-        // ② #top-bar 被美化加高，垂下来盖住 #sheld 顶端（梦胧灯：顶栏 100px）。
-        //    默认布局里 #top-bar 下沿不超过 #sheld 上沿，不会误判。
-        const chatDetached = ['absolute', 'fixed'].includes(getComputedStyle(chat).position);
+        if (pageShifted()) {
+            retryLater();
+            return;
+        }
         const topBarVisible = !!topSettingsBar && getComputedStyle(topSettingsBar).display !== 'none';
         const topBarBottom = topBarVisible ? topSettingsBar.getBoundingClientRect().bottom : 0;
-        const hangingTopBar = !chatDetached && topBarBottom - sheld.getBoundingClientRect().top > 2;
-        const buriedClearY = chatDetached || hangingTopBar ? null : findTopBarDecorClearY();
-        const overlay = chatDetached || hangingTopBar || buriedClearY !== null;
-        document.body.classList.toggle('harborOverlay', overlay);
-        if (!overlay) {
+        if (modeDirty || !mode) {
+            if (drawerOpen()) {
+                retryLater();
+                if (!mode) return;
+            } else {
+                // 需要浮起的三种情形：
+                // ① #chat 被改成绝对定位铺满 #sheld（竟夕相思）；
+                // ② #top-bar 被美化加高，垂下来盖住 #sheld 顶端（梦胧灯：顶栏 100px）。
+                //    默认布局里 #top-bar 下沿不超过 #sheld 上沿，不会误判；
+                // ③ 顶栏本体或伪元素花边压住港口（远方 / Butterfly），靠实地点测。
+                const chatDetached = ['absolute', 'fixed'].includes(getComputedStyle(chat).position);
+                const hangingTopBar = !chatDetached && topBarBottom - sheld.getBoundingClientRect().top > 2;
+                const buriedClearY = chatDetached || hangingTopBar ? null : findTopBarDecorClearY();
+                mode = {
+                    overlay: chatDetached || hangingTopBar || buriedClearY !== null,
+                    chatDetached,
+                    // 存成相对 #sheld 上沿的偏移，之后 #sheld 挪动也能跟着走
+                    buriedOffset: buriedClearY === null ? null : buriedClearY - sheld.getBoundingClientRect().top,
+                };
+                modeDirty = false;
+            }
+        }
+        document.body.classList.toggle('harborOverlay', mode.overlay);
+        if (!mode.overlay) {
             if (topBar.parentElement !== sheld) {
                 sheld.insertBefore(topBar, chat);
                 sheld.insertBefore(connectionProfiles, chat);
@@ -477,10 +509,10 @@ function harborAdaptLayout() {
         // ① 聊天区铺满：原位就在顶栏底下，得挪到 #top-bar 下沿。
         // ② 顶栏垂下来：加高的部分往往只有上半截有花边、下半截透明，
         //    贴 #top-bar 下沿会掉进空白里——留在原位（#sheld 上沿），只是层级浮到顶栏上面。
-        // ③ 伪元素花边：挪到花边点不中的第一行，别压在花边的字上。
+        // ③ 被压：按判定时量好的偏移放（本体盒子→原位；伪元素花边→花边下面）。
         let top = Math.max(0, sheldRect.top);
-        if (chatDetached) top = Math.max(top, topBarBottom);
-        if (buriedClearY !== null) top = Math.max(top, buriedClearY);
+        if (mode.chatDetached) top = Math.max(top, topBarBottom);
+        if (mode.buriedOffset !== null) top = Math.max(top, sheldRect.top + mode.buriedOffset);
         root.style.setProperty('--harborOverlayTop', `${Math.round(top)}px`);
         root.style.setProperty('--harborOverlayLeft', `${Math.round(sheldRect.left)}px`);
         root.style.setProperty('--harborOverlayWidth', `${Math.round(sheldRect.width)}px`);
@@ -527,15 +559,22 @@ function harborAdaptLayout() {
         return y;
     }
     const applyDebounced = debounce(apply, 200);
+    // 美化/主题变了 → 重新判定要不要浮；其余（缩放、键盘、顶栏变高）只更新坐标。
+    const reclassify = () => {
+        modeDirty = true;
+        applyDebounced();
+    };
     apply();
-    // 换美化 = 改 <head> 里的 style；旋转屏幕/顶栏变高/拖宽聊天区也要重算。
-    new MutationObserver(applyDebounced).observe(document.head, { childList: true, subtree: true, characterData: true });
+    // 换美化 = 改 <head> 里的 style。
+    new MutationObserver(reclassify).observe(document.head, { childList: true, subtree: true, characterData: true });
     // 在设置面板里调主题色/毛玻璃，ST 改的是 <html> 的 style 和 body 的 class。
     // （我们自己只在 body 上 toggle 一个已是该值的 class 时不产生变动，不会自激。）
-    const themeObserver = new MutationObserver(applyDebounced);
+    const themeObserver = new MutationObserver(reclassify);
     themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['style', 'class'] });
     themeObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
     window.addEventListener('resize', applyDebounced);
+    // 页面被顶歪后归位（锚点 scrollTo(0,0)）时补量一次。
+    window.addEventListener('scroll', applyDebounced, { passive: true });
     if (typeof ResizeObserver === 'function') {
         const resizeObserver = new ResizeObserver(applyDebounced);
         resizeObserver.observe(sheld);
