@@ -532,13 +532,14 @@ function harborAdaptLayout() {
         }
         const rect = topBar.getBoundingClientRect();
         if (rect.width < 1 || rect.height < 1) return null;
-        const rowCovered = (y) => [0.1, 0.3, 0.5, 0.7, 0.9].some((fraction) => {
+        // 一行里有几个采样点点中顶栏。
+        const coveredCount = (y) => [0.1, 0.3, 0.5, 0.7, 0.9].filter((fraction) => {
             const hit = document.elementFromPoint(rect.left + rect.width * fraction, y);
             if (!hit || topBar.contains(hit) || hit.closest('.drawer-content')) return false;
             return !!hit.closest('#top-bar, #top-settings-holder');
-        });
+        }).length;
         const midY = rect.top + rect.height / 2;
-        if (!rowCovered(midY)) return null;
+        if (coveredCount(midY) === 0) return null;
         // v1.3.11 分两种压法：
         // · 被顶栏「本体盒子」盖住（远方：#top-settings-holder 本身 80px 高，背景图下半截
         //   是和页面融为一色的山水）→ 同梦胧灯，下半截多半是视觉留白，留在原位浮起即可；
@@ -553,9 +554,14 @@ function harborAdaptLayout() {
             return midY >= box.top && midY <= box.bottom && x >= box.left && x <= box.right;
         });
         if (coveredByOwnBox) return rect.top;
+        // v1.3.13 往下探时至少 2 个点被压才算「这行还被花边盖着」。
+        // Butterfly 还挂了个 ::before：背景图是空的（看不见），但占着右上角 90px 高的
+        // 一条、点得到。旧规则「任一点被压就继续往下」被它一路拖到聊天区中间。
+        // 窄条挡不住整行，浮起后港口本来就压在它上面，照样点得到。
+        if (coveredCount(midY) < 2) return rect.top;
         let y = midY;
         const limit = Math.min(window.innerHeight / 2, rect.top + 300);
-        while (y < limit && rowCovered(y)) y += 2;
+        while (y < limit && coveredCount(y) >= 2) y += 2;
         return y;
     }
     const applyDebounced = debounce(apply, 200);
