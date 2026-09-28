@@ -474,6 +474,9 @@ function harborAdaptLayout() {
             root.style.setProperty('--harborBarBg', barStyle.backgroundColor);
             root.style.setProperty('--harborBarBackdrop', barStyle.backdropFilter || barStyle.webkitBackdropFilter || 'none');
         }
+        // v1.3.15 美化把港口排成网格（观月札记手机端：两行 14 列，第一行「聊天名 | 搜索框」）
+        // → 挂 harborGrid，CSS 把原版搜索框那格让给车队（搜索已收进车队里）。
+        topBar.classList.toggle('harborGrid', getComputedStyle(topBar).display === 'grid');
         if (pageShifted()) {
             retryLater();
             return;
@@ -490,8 +493,17 @@ function harborAdaptLayout() {
                 // ② #top-bar 被美化加高，垂下来盖住 #sheld 顶端（梦胧灯：顶栏 100px）。
                 //    默认布局里 #top-bar 下沿不超过 #sheld 上沿，不会误判；
                 // ③ 顶栏本体或伪元素花边压住港口（远方 / Butterfly），靠实地点测。
-                const chatDetached = ['absolute', 'fixed'].includes(getComputedStyle(chat).position);
-                const hangingTopBar = !chatDetached && topBarBottom - sheld.getBoundingClientRect().top > 2;
+                // v1.3.15 美化自己把港口排成 fixed 悬浮卡片（观月札记：left:50% + translateX(-50%)，
+                // 贴在导航下面）= 作者专门排过版。这时 ①② 两条「按布局推断」不作数——
+                // 观月札记把 #sheld 顶到 0，按 ② 会误判成「顶栏垂下来」，把港口拽到导航上。
+                // 只留 ③ 实地点测：真被顶栏压住才浮。
+                if (topBar.parentElement !== sheld) {
+                    sheld.insertBefore(topBar, chat);
+                    sheld.insertBefore(connectionProfiles, chat);
+                }
+                const themePlacedBar = getComputedStyle(topBar).position === 'fixed';
+                const chatDetached = !themePlacedBar && ['absolute', 'fixed'].includes(getComputedStyle(chat).position);
+                const hangingTopBar = !themePlacedBar && !chatDetached && topBarBottom - sheld.getBoundingClientRect().top > 2;
                 const buriedClearY = chatDetached || hangingTopBar ? null : findTopBarDecorClearY();
                 mode = {
                     overlay: chatDetached || hangingTopBar || buriedClearY !== null,

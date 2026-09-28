@@ -282,6 +282,15 @@ body.movingUI #extensionTopBar {
     flex-shrink: 1;
 }
 
+/* v1.3.15 美化把港口排成网格时（JS 挂 harborGrid），车队占第一行右半边——
+   原版 Chat Top Bar 的搜索框格子。不然车队会被塞进一个 1/14 宽的小格里。 */
+#extensionTopBar.harborGrid > #extensionHarborDock {
+    grid-row: 1;
+    grid-column: 8 / -1;
+    max-width: none;
+    justify-self: end;
+}
+
 /* 入库浮标的公共兜底（主装束由 JS 行内 !important 负责） */
 #extensionHarborDock [data-harbor-parked="1"] {
     white-space: nowrap;
@@ -306,6 +315,8 @@ body.harborOverlay > #extensionConnectionProfiles {
     bottom: auto !important;
     width: var(--harborOverlayWidth, 100%) !important;
     z-index: 3006 !important;
+    /* v1.3.15 美化写的 translateX(-50%) 之类会把浮起的港口拽歪，一律清掉 */
+    transform: none !important;
 }
 
 body.harborOverlay > #extensionTopBar {
