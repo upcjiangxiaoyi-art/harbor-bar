@@ -317,6 +317,9 @@ function addTopBar() {
 
 /* ===================== 避风塘泊车核心 ===================== */
 
+// 泊内车身缩放：默认七成，用户可用 --harbor-car-scale 覆盖。
+const HARBOR_CAR_ZOOM = 'var(--harbor-car-scale, 0.7)';
+
 /**
  * 给入库浮标换上泊位制服：剥掉 fixed 定位与巨型阴影，压成栏内小胶囊。
  * 全部用 !important 写入，压过原插件创建时的行内 !important。
@@ -352,6 +355,10 @@ function harborApplyParkedStyle(el) {
     imp('max-height', '20px');
     imp('overflow', 'hidden');
     imp('pointer-events', 'auto');
+    // v1.3.14 袖珍车（ripple 提）：整车等比缩到七成，连车里的图标一起缩、占地一起缩。
+    // 用 zoom 不用 transform:scale——后者只缩画面，原来的车位还空着。
+    // 想调大小：在自定义 CSS 里写 :root { --harbor-car-scale: 0.8; }
+    imp('zoom', HARBOR_CAR_ZOOM);
 }
 
 /**
@@ -366,6 +373,7 @@ function harborStyleIntact(el) {
         && el.style.maxWidth === '88px'
         && el.style.opacity === '1'
         && el.style.visibility === 'visible'
+        && el.style.getPropertyValue('zoom').includes('--harbor-car-scale')
         && el.parentElement === harborDock;
 }
 
