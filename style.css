@@ -145,7 +145,8 @@ body.reduced-motion #extensionSideBar {
     overflow: hidden;
     flex-shrink: 0;
     align-content: center;
-    align-items: baseline;
+    /* v1.4.1 居中对齐：原版 baseline 让字体图标往上飘，和圆头像、小车对不齐 */
+    align-items: center;
     width: 100%;
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 10px 10px 0 0;
@@ -231,8 +232,9 @@ body.movingUI #extensionTopBar {
     position: relative;
     flex: 0 0 auto;
     align-self: center;
-    width: 28px;
-    height: 28px;
+    /* 头像大小可调：:root { --harbor-avatar-size: 22px; } */
+    width: var(--harbor-avatar-size, 24px);
+    height: var(--harbor-avatar-size, 24px);
     border-radius: 50%;
     overflow: hidden;
     cursor: pointer;
