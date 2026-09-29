@@ -559,7 +559,12 @@ function harborAdaptLayout() {
         if (topSettingsBar) {
             const barStyle = getComputedStyle(topSettingsBar);
             root.style.setProperty('--harborBarBg', barStyle.backgroundColor);
-            root.style.setProperty('--harborBarBackdrop', barStyle.backdropFilter || barStyle.webkitBackdropFilter || 'none');
+            // v1.5.3 省电：毛玻璃在 iOS 上每滚一帧都要重算一遍背后的模糊，是滑动卡、发烫的大户。
+            // 底色几乎不透明（模糊了也看不见）或用户开了酒馆的省性能模式（body.no-blur）时直接关掉。
+            const alphaMatch = barStyle.backgroundColor.match(/rgba?\(([^)]+)\)/);
+            const alpha = alphaMatch ? Number(alphaMatch[1].split(',')[3] ?? 1) : 1;
+            const blurUseless = alpha >= 0.95 || document.body.classList.contains('no-blur');
+            root.style.setProperty('--harborBarBackdrop', blurUseless ? 'none' : (barStyle.backdropFilter || barStyle.webkitBackdropFilter || 'none'));
         }
         // v1.3.15 美化把港口排成网格（观月札记手机端：两行 14 列，第一行「聊天名 | 搜索框」）
         // → 挂 harborGrid，CSS 把原版搜索框那格让给车队（搜索已收进车队里）。
@@ -702,8 +707,13 @@ function harborAdaptLayout() {
  */
 function harborInstallParking() {
     harborParkFloaters();
+    // v1.5.3 省电：以前盯整棵 body 子树（subtree），AI 流式出字每改一个字都叫醒一次管家，
+    // 一秒几十次。浮标都是挂在 body / #sheld 下面的直接子元素（被原插件拖走也是拖回 body），
+    // 所以只盯这两层的增删；万一有挂得更深的，靠 2 秒一趟的巡逻兜底（三次 querySelector，几乎零成本）。
     const observer = new MutationObserver(() => harborParkDebounced());
-    observer.observe(document.body, { childList: true, subtree: true });
+    observer.observe(document.body, { childList: true });
+    observer.observe(sheld, { childList: true });
+    setInterval(() => harborParkFloaters(), 2000);
 }
 
 function addIcons() {
@@ -855,6 +865,12 @@ async function populateSideBar() {
     const container = document.getElementById('extensionSideBarContainer');
 
     if (!loader || !container || !sidebar) {
+        return;
+    }
+
+    // v1.5.3 省电：侧边栏按钮已下岗，没人看得见它。原版每次切聊天都去服务器拉一遍
+    // 全部聊天记录再建一整棵列表——没打开就不干这活。
+    if (!sidebar.classList.contains('visible')) {
         return;
     }
 
