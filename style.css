@@ -159,6 +159,14 @@ body.reduced-motion #extensionSideBar {
     font-size: calc(var(--mainFontSize) * 0.9);
 }
 
+/* v1.5.0 手机上按钮多了，间距收紧一点，保证 375px 宽的小屏也排得下 */
+@media screen and (max-width: 480px) {
+    #extensionTopBar {
+        gap: 6px;
+        padding: 0 6px;
+    }
+}
+
 #extensionTopBar .not-in-chat {
     opacity: 0.5;
 }
@@ -281,6 +289,31 @@ body.movingUI #extensionTopBar {
     opacity: 0 !important;
     font-size: 16px !important; /* iOS：字号 <16px 的下拉框聚焦时会自动放大页面 */
     cursor: pointer;
+}
+
+/* v1.5.0 🎨 美化快切：透明下拉框铺满图标，点图标 = 点下拉框 */
+#extensionHarborThemeSwitch {
+    position: relative;
+}
+
+#extensionTopBar #extensionHarborThemeSwitch > #extensionHarborThemePicker {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    opacity: 0 !important;
+    font-size: 16px !important; /* iOS：字号 <16px 的下拉框聚焦时会自动放大页面 */
+    cursor: pointer;
+}
+
+/* ⤓ 长按不弹系统菜单、不选中文字 */
+#extensionHarborJump {
+    -webkit-touch-callout: none;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 #extensionTopBarSearchInput {

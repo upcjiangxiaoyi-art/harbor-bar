@@ -47,12 +47,15 @@ const connectionProfilesSelect = document.createElement('select');
 const connectionProfilesIcon = document.createElement('img');
 
 const icons = [
+    // v1.5.0 按钮换班（ripple 定）：📦 侧边栏、📇 聊天文件管理下岗（切聊天有头像），
+    // 🎨 美化快切、⤓ 跳到最新、🔁 重 roll 上岗。
     {
-        id: 'extensionTopBarToggleSidebar',
-        icon: 'fa-fw fa-solid fa-box-archive',
+        id: 'extensionHarborThemeSwitch',
+        icon: 'fa-fw fa-solid fa-palette',
         position: 'left',
-        title: t`Toggle sidebar`,
-        onClick: onToggleSidebarClick,
+        title: t`Switch theme`,
+        isTemporaryAllowed: true,
+        onClick: () => {}, // 真正干活的是叠在图标上的透明下拉框
     },
     {
         id: 'extensionTopBarToggleConnectionProfiles',
@@ -63,12 +66,18 @@ const icons = [
         onClick: onToggleConnectionProfilesClick,
     },
     {
-        id: 'extensionTopBarChatManager',
-        icon: 'fa-fw fa-solid fa-address-book',
+        id: 'extensionHarborJump',
+        icon: 'fa-fw fa-solid fa-angles-down',
         position: 'right',
-        title: t`View chat files`,
-        isTemporaryAllowed: true,
-        onClick: onChatManagerClick,
+        title: t`Jump to latest (hold: jump to top)`,
+        onClick: () => harborJump(false),
+    },
+    {
+        id: 'extensionHarborReroll',
+        icon: 'fa-fw fa-solid fa-rotate-right',
+        position: 'right',
+        title: t`Regenerate`,
+        onClick: () => document.getElementById('option_regenerate')?.click(),
     },
     {
         id: 'extensionTopBarNewChat',
@@ -106,6 +115,70 @@ const icons = [
         onClick: onCloseChatClick,
     },
 ];
+
+/**
+ * ⤓ 跳到聊天最底（最新）或最顶（已加载的最早一条）。
+ * @param {boolean} toTop true = 最顶
+ */
+function harborJump(toTop) {
+    chat.scrollTo({ top: toTop ? 0 : chat.scrollHeight, behavior: 'smooth' });
+}
+
+/**
+ * ⤓ 长按半秒 = 跳到最顶；松手不再触发「跳到最新」。
+ * @param {HTMLElement} el ⤓ 按钮
+ */
+function harborInstallJumpLongPress(el) {
+    let timer = null;
+    let longPressed = false;
+    const cancel = () => clearTimeout(timer);
+    el.addEventListener('pointerdown', () => {
+        longPressed = false;
+        timer = setTimeout(() => {
+            longPressed = true;
+            harborJump(true);
+        }, 500);
+    });
+    el.addEventListener('pointerup', cancel);
+    el.addEventListener('pointerleave', cancel);
+    el.addEventListener('pointercancel', cancel);
+    // 捕获阶段拦下长按后的那次 click，不让它再「跳到最新」
+    el.addEventListener('click', (e) => {
+        if (longPressed) {
+            e.stopImmediatePropagation();
+            longPressed = false;
+        }
+    }, true);
+    el.addEventListener('contextmenu', (e) => e.preventDefault());
+}
+
+/**
+ * 🎨 美化快切：透明下拉框叠在图标上，选项现抄「用户设置」里的 #themes，
+ * 选中后替用户在 #themes 上选好并触发 change，等于去设置里切了一次。
+ * @param {HTMLElement} el 🎨 按钮
+ */
+function harborInstallThemeSwitch(el) {
+    const picker = document.createElement('select');
+    picker.id = 'extensionHarborThemePicker';
+    picker.title = t`Switch theme`;
+    const sync = () => {
+        const source = /** @type {HTMLSelectElement} */ (document.getElementById('themes'));
+        if (!source) return;
+        picker.innerHTML = source.innerHTML;
+        picker.value = source.value;
+    };
+    picker.addEventListener('pointerdown', sync);
+    picker.addEventListener('touchstart', sync, { passive: true });
+    picker.addEventListener('focus', sync);
+    picker.addEventListener('change', () => {
+        const source = /** @type {HTMLSelectElement} */ (document.getElementById('themes'));
+        if (!source || source.value === picker.value) return;
+        source.value = picker.value;
+        source.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    el.appendChild(picker);
+    sync();
+}
 
 function onChatManagerClick() {
     document.getElementById('option_select_chat')?.click();
@@ -674,6 +747,12 @@ function addIcons() {
             }
             icon.onClick();
         });
+        if (icon.id === 'extensionHarborJump') {
+            harborInstallJumpLongPress(iconElement);
+        }
+        if (icon.id === 'extensionHarborThemeSwitch') {
+            harborInstallThemeSwitch(iconElement);
+        }
         if (icon.position === 'left') {
             topBar.insertBefore(iconElement, harborAvatar);
             return;
