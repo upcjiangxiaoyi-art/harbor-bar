@@ -291,24 +291,6 @@ body.movingUI #extensionTopBar {
     cursor: pointer;
 }
 
-/* v1.5.0 🎨 美化快切：透明下拉框铺满图标，点图标 = 点下拉框 */
-#extensionHarborThemeSwitch {
-    position: relative;
-}
-
-#extensionTopBar #extensionHarborThemeSwitch > #extensionHarborThemePicker {
-    position: absolute !important;
-    inset: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    min-width: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    opacity: 0 !important;
-    font-size: 16px !important; /* iOS：字号 <16px 的下拉框聚焦时会自动放大页面 */
-    cursor: pointer;
-}
-
 /* ⤓ 长按不弹系统菜单、不选中文字 */
 #extensionHarborJump {
     -webkit-touch-callout: none;

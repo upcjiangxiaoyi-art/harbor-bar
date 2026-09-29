@@ -48,15 +48,7 @@ const connectionProfilesIcon = document.createElement('img');
 
 const icons = [
     // v1.5.0 按钮换班（ripple 定）：📦 侧边栏、📇 聊天文件管理下岗（切聊天有头像），
-    // 🎨 美化快切、⤓ 跳到最新、🔁 重 roll 上岗。
-    {
-        id: 'extensionHarborThemeSwitch',
-        icon: 'fa-fw fa-solid fa-palette',
-        position: 'left',
-        title: t`Switch theme`,
-        isTemporaryAllowed: true,
-        onClick: () => {}, // 真正干活的是叠在图标上的透明下拉框
-    },
+    // ⤓ 跳到最新、⬅️ 上一版、🔁 重 roll 上岗。（🎨 美化快切试过：美化一多，iOS 下拉滚轮空白，撤了）
     {
         id: 'extensionTopBarToggleConnectionProfiles',
         icon: 'fa-fw fa-solid fa-plug',
@@ -73,11 +65,18 @@ const icons = [
         onClick: () => harborJump(false),
     },
     {
+        id: 'extensionHarborSwipeBack',
+        icon: 'fa-fw fa-solid fa-angle-left',
+        position: 'right',
+        title: t`Previous version`,
+        onClick: () => document.querySelector('#chat .last_mes .swipe_left')?.click(),
+    },
+    {
         id: 'extensionHarborReroll',
         icon: 'fa-fw fa-solid fa-rotate-right',
         position: 'right',
-        title: t`Regenerate`,
-        onClick: () => document.getElementById('option_regenerate')?.click(),
+        title: t`Regenerate (keeps old versions)`,
+        onClick: harborReroll,
     },
     {
         id: 'extensionTopBarNewChat',
@@ -153,31 +152,18 @@ function harborInstallJumpLongPress(el) {
 }
 
 /**
- * 🎨 美化快切：透明下拉框叠在图标上，选项现抄「用户设置」里的 #themes，
- * 选中后替用户在 #themes 上选好并触发 change，等于去设置里切了一次。
- * @param {HTMLElement} el 🎨 按钮
+ * 🔁 重 roll = 替用户点最后一条消息上的「→」（滑一下）：
+ * 已在最新一版时生成新的一版，旧版全留着，⬅️ 能翻回去。
+ * 不走菜单的「重新生成」——那个会先把最后一条回复整条删掉（chat.length - 1）。
+ * 最后一条是用户自己的（AI 还没回）时没有箭头，才退回「重新生成」：这时它只是补一条回复，不删东西。
  */
-function harborInstallThemeSwitch(el) {
-    const picker = document.createElement('select');
-    picker.id = 'extensionHarborThemePicker';
-    picker.title = t`Switch theme`;
-    const sync = () => {
-        const source = /** @type {HTMLSelectElement} */ (document.getElementById('themes'));
-        if (!source) return;
-        picker.innerHTML = source.innerHTML;
-        picker.value = source.value;
-    };
-    picker.addEventListener('pointerdown', sync);
-    picker.addEventListener('touchstart', sync, { passive: true });
-    picker.addEventListener('focus', sync);
-    picker.addEventListener('change', () => {
-        const source = /** @type {HTMLSelectElement} */ (document.getElementById('themes'));
-        if (!source || source.value === picker.value) return;
-        source.value = picker.value;
-        source.dispatchEvent(new Event('change', { bubbles: true }));
-    });
-    el.appendChild(picker);
-    sync();
+function harborReroll() {
+    const swipeRight = /** @type {HTMLElement} */ (document.querySelector('#chat .last_mes .swipe_right'));
+    if (swipeRight) {
+        swipeRight.click();
+        return;
+    }
+    document.getElementById('option_regenerate')?.click();
 }
 
 function onChatManagerClick() {
@@ -749,9 +735,6 @@ function addIcons() {
         });
         if (icon.id === 'extensionHarborJump') {
             harborInstallJumpLongPress(iconElement);
-        }
-        if (icon.id === 'extensionHarborThemeSwitch') {
-            harborInstallThemeSwitch(iconElement);
         }
         if (icon.position === 'left') {
             topBar.insertBefore(iconElement, harborAvatar);
