@@ -535,18 +535,6 @@ function harborAnchorViewport() {
  * 看得见也点不着。所以探测到港口会被压住时，港口（连同连接面板）
  * 整个搬到 <body> 下，fixed 浮在 #top-bar 下沿；普通美化下原样搬回 #sheld。
  */
-/**
- * 把颜色的透明度拉到至少 0.92（面板要盖在聊天上还看得清字）。认不出的格式原样返回。
- * @param {string} color CSS 颜色
- * @returns {string}
- */
-function harborSolidColor(color) {
-    const m = String(color).match(/rgba?\(([^)]+)\)/);
-    if (!m) return color;
-    const [r, g, b, a = '1'] = m[1].split(',').map(x => x.trim());
-    return `rgba(${r}, ${g}, ${b}, ${Math.max(Number(a), 0.92)})`;
-}
-
 function harborAdaptLayout() {
     const topSettingsBar = document.getElementById('top-bar');
     // 变量写在 body 上：<html> 的 style 归 ST 主题色用，我们要监听它，不能自己也往上写。
@@ -577,12 +565,6 @@ function harborAdaptLayout() {
             const alpha = alphaMatch ? Number(alphaMatch[1].split(',')[3] ?? 1) : 1;
             const blurUseless = alpha >= 0.95 || document.body.classList.contains('no-blur');
             root.style.setProperty('--harborBarBackdrop', blurUseless ? 'none' : (barStyle.backdropFilter || barStyle.webkitBackdropFilter || 'none'));
-            // v1.5.5 连接面板不用毛玻璃，改用近乎不透明的底色：栏条有颜色就用栏条色，
-            // 栏条是透明的（竟夕相思）就用主题的模糊底色，透明度都拉到至少 0.92。
-            root.style.setProperty('--harborPanelBg', harborSolidColor(
-                alpha >= 0.05 ? barStyle.backgroundColor
-                    : getComputedStyle(document.body).getPropertyValue('--SmartThemeBlurTintColor').trim(),
-            ));
         }
         // v1.3.15 美化把港口排成网格（观月札记手机端：两行 14 列，第一行「聊天名 | 搜索框」）
         // → 挂 harborGrid，CSS 把原版搜索框那格让给车队（搜索已收进车队里）。
@@ -593,6 +575,7 @@ function harborAdaptLayout() {
         }
         const topBarVisible = !!topSettingsBar && getComputedStyle(topSettingsBar).display !== 'none';
         const topBarBottom = topBarVisible ? topSettingsBar.getBoundingClientRect().bottom : 0;
+        let modeJustDecided = false;
         if (modeDirty || !mode) {
             if (drawerOpen()) {
                 retryLater();
@@ -622,6 +605,7 @@ function harborAdaptLayout() {
                     buriedOffset: buriedClearY === null ? null : buriedClearY - sheld.getBoundingClientRect().top,
                 };
                 modeDirty = false;
+                modeJustDecided = true;
             }
         }
         document.body.classList.toggle('harborOverlay', mode.overlay);
@@ -630,12 +614,18 @@ function harborAdaptLayout() {
                 sheld.insertBefore(topBar, chat);
                 sheld.insertBefore(connectionProfiles, chat);
             }
-            harborPlaceProfiles();
+            if (modeJustDecided) {
+                harborClassifyProfiles();
+            } else {
+                harborPlaceProfiles();
+            }
             return;
         }
-        connectionProfiles.classList.remove('harborProfilesFloat');
         if (topBar.parentElement !== document.body) {
             document.body.append(topBar, connectionProfiles);
+        }
+        if (modeJustDecided) {
+            harborClassifyProfiles();
         }
         const sheldRect = sheld.getBoundingClientRect();
         // ① 聊天区铺满：原位就在顶栏底下，得挪到 #top-bar 下沿。
@@ -1025,60 +1015,98 @@ async function onToggleConnectionProfilesClick() {
         return;
     }
 
-    button.classList.toggle('active');
-    harborPlaceProfiles();
-    connectionProfiles.classList.toggle('visible');
+    harborProfilesOpen = !harborProfilesOpen;
+    // v1.5.6 按钮高亮也走内联样式，不换 class：重美化里 :has(.active) 之类的规则
+    // 在 iOS 上会因为一次 class 变动把整片页面的样式重新核对一遍。
+    button.style.filter = harborProfilesOpen ? 'brightness(150%)' : '';
+    harborShowProfiles();
     savePanelsState();
     await onOnlineStatusChange();
 }
 
+/** 连接面板当前开没开（v1.5.6 起不再靠 .visible 这个 class 记状态）。 */
+let harborProfilesOpen = false;
+
 /**
- * v1.5.4 连接面板浮起来（ripple 报：点 🔌 开合时整页狂卡）。
- * 原版面板挤在文档流里：一开一合，聊天区就被压矮 / 拉高，
- * 浏览器得把几百条带大图和阴影的消息整个重排重画一遍。
- * 改成 absolute 盖在聊天区上面，聊天区尺寸纹丝不动。
- * 美化自己给面板排了位置（观月札记：fixed）或港口整体浮起时不插手。
+ * v1.5.4/1.5.6 连接面板开合（ripple 报：点 🔌 开合时整页狂卡，重美化尤甚，
+ * 「像是弹出来的瞬间整套美化被重新加载」）。
+ * 开合时页面上只改面板自己的内联 opacity / pointer-events：
+ * 内联样式只影响这一个元素，不会让美化里任何选择器（尤其 :has()）重新匹配，
+ * 不换 class、不增删节点、不重排——重美化也惊动不到。
+ * 美化自己给面板排了位置时（观月札记靠 .visible 切 grid 布局）照旧用 .visible。
  */
-function harborPlaceProfiles() {
-    if (connectionProfiles.parentElement !== sheld) {
-        connectionProfiles.classList.remove('harborProfilesFloat');
+function harborShowProfiles() {
+    const selfPlaced = connectionProfiles.classList.contains('harborProfilesFloat')
+        || connectionProfiles.parentElement === document.body;
+    if (selfPlaced) {
+        if (connectionProfiles.classList.contains('visible')) {
+            connectionProfiles.classList.remove('visible');
+        }
+        connectionProfiles.style.opacity = harborProfilesOpen ? '1' : '0';
+        connectionProfiles.style.pointerEvents = harborProfilesOpen ? 'auto' : 'none';
         return;
     }
-    // 先摘掉自己的 class，看美化有没有给它排位置
+    connectionProfiles.style.removeProperty('opacity');
+    connectionProfiles.style.removeProperty('pointer-events');
+    connectionProfiles.classList.toggle('visible', harborProfilesOpen);
+}
+
+/**
+ * 换美化 / 换模式时判定一次：美化没给面板排位置，就由我们把它浮在港口下面
+ * （absolute 盖在聊天区上，开合时聊天区尺寸不变、不重排）。点 🔌 时不再现判。
+ */
+function harborClassifyProfiles() {
     connectionProfiles.classList.remove('harborProfilesFloat');
-    if (getComputedStyle(connectionProfiles).position !== 'static') {
-        return;
+    if (connectionProfiles.parentElement === sheld
+        && getComputedStyle(connectionProfiles).position === 'static') {
+        connectionProfiles.classList.add('harborProfilesFloat');
+    } else {
+        connectionProfiles.style.removeProperty('top');
     }
-    connectionProfiles.classList.add('harborProfilesFloat');
-    sheld.style.setProperty('--harborProfilesFloatTop', `${topBar.offsetTop + topBar.offsetHeight}px`);
+    harborPlaceProfiles();
+    harborShowProfiles();
+}
+
+/** 浮起的面板贴港口下沿；位置写在面板自己身上，数值不变就不写。 */
+function harborPlaceProfiles() {
+    if (!connectionProfiles.classList.contains('harborProfilesFloat')) return;
+    const top = `${topBar.offsetTop + topBar.offsetHeight}px`;
+    if (connectionProfiles.style.top !== top) {
+        connectionProfiles.style.top = top;
+    }
 }
 
 async function onOnlineStatusChange() {
-    if (!connectionProfiles.classList.contains('visible')) {
+    if (!harborProfilesOpen) {
         return;
     }
 
     const connectionProfilesMainSelect = /** @type {HTMLSelectElement} */ (document.getElementById('connection_profiles'));
+    // v1.5.6 面板内容没变就一个字都不写：以前每次开面板都重灌列表、删了图标再插，
+    // 重美化下每一次 DOM 变动都可能让 iOS 重新核对一遍整页样式。
     if (connectionProfilesMainSelect) {
-        connectionProfilesSelect.innerHTML = connectionProfilesMainSelect.innerHTML;
-        connectionProfilesSelect.value = connectionProfilesMainSelect.value;
+        if (connectionProfilesSelect.innerHTML !== connectionProfilesMainSelect.innerHTML) {
+            connectionProfilesSelect.innerHTML = connectionProfilesMainSelect.innerHTML;
+        }
+        if (connectionProfilesSelect.value !== connectionProfilesMainSelect.value) {
+            connectionProfilesSelect.value = connectionProfilesMainSelect.value;
+        }
     } else {
         connectionProfilesSelect.classList.add('displayNone');
-    }
-
-    if (connectionProfilesStatus.nextElementSibling?.classList?.contains('icon-svg')) {
-        connectionProfilesStatus.nextElementSibling.remove();
     }
 
     const { SlashCommandParser, onlineStatus, mainApi } = SillyTavern.getContext();
 
     if (onlineStatus === 'no_connection') {
-        connectionProfilesStatus.classList.add('offline');
-        connectionProfilesStatus.textContent = t`No connection...`;
+        if (connectionProfilesStatus.textContent !== t`No connection...`) {
+            harborRemoveProfileIcon();
+            connectionProfilesStatus.classList.add('offline');
+            connectionProfilesStatus.textContent = t`No connection...`;
 
-        const nullIcon = new Image();
-        nullIcon.classList.add('icon-svg', 'null-icon');
-        connectionProfilesStatus.insertAdjacentElement('afterend', nullIcon);
+            const nullIcon = new Image();
+            nullIcon.classList.add('icon-svg', 'null-icon');
+            connectionProfilesStatus.insertAdjacentElement('afterend', nullIcon);
+        }
         return;
     }
 
@@ -1118,9 +1146,31 @@ async function onOnlineStatusChange() {
     }
 
     const [currentAPI, currentModel] = await Promise.all([getCurrentAPI(), getCurrentModel()]);
-    await addConnectionProfileIcon();
-    connectionProfilesStatus.classList.remove('offline');
-    connectionProfilesStatus.textContent = `${currentAPI} – ${currentModel}`;
+    const iconApi = getGeneratingApi();
+    const iconEl = connectionProfilesStatus.nextElementSibling;
+    const hasIcon = iconEl?.classList?.contains('icon-svg') && !iconEl.classList.contains('null-icon');
+    if (!hasIcon || harborProfileIconApi !== iconApi) {
+        harborRemoveProfileIcon();
+        harborProfileIconApi = iconApi;
+        await addConnectionProfileIcon();
+    }
+    const statusText = `${currentAPI} – ${currentModel}`;
+    if (connectionProfilesStatus.classList.contains('offline')) {
+        connectionProfilesStatus.classList.remove('offline');
+    }
+    if (connectionProfilesStatus.textContent !== statusText) {
+        connectionProfilesStatus.textContent = statusText;
+    }
+}
+
+/** 面板上当前挂着的 API 图标对应哪个 API（换了 API 才重插图标）。 */
+let harborProfileIconApi = '';
+
+function harborRemoveProfileIcon() {
+    if (connectionProfilesStatus.nextElementSibling?.classList?.contains('icon-svg')) {
+        connectionProfilesStatus.nextElementSibling.remove();
+    }
+    harborProfileIconApi = '';
 }
 
 async function addConnectionProfileIcon() {
@@ -1148,7 +1198,7 @@ async function addConnectionProfileIcon() {
 function savePanelsState() {
     localStorage.setItem('topBarPanelsState', JSON.stringify({
         sidebarVisible: document.getElementById('extensionSideBar')?.classList.contains('visible'),
-        connectionProfilesVisible: document.getElementById('extensionConnectionProfiles')?.classList.contains('visible'),
+        connectionProfilesVisible: harborProfilesOpen,
     }));
 }
 
