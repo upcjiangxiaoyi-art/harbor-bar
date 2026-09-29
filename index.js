@@ -157,13 +157,20 @@ function harborInstallJumpLongPress(el) {
  * v1.5.7 🔌 直接弹系统选择器切连接配置，不再开连接面板（ripple 报：重美化下面板一出来，
  * 聊天区整片白屏、滑动时一块白一块慢慢回来——iOS 显存吃紧，多出一个浮在聊天上的图层，
  * 系统就把聊天区已画好的瓦片全扔了重画）。系统选择器由 iOS 自己画，页面上不多任何一层。
- * 选项现抄酒馆的 #connection_profiles，选中后替用户在那边选好并触发 change。
+ * 选中后替用户在酒馆的 #connection_profiles 上选好并触发 change。
+ *
+ * v1.5.8 选项必须「提前」备好：v1.5.7 是手指按下那一刻才现灌选项（innerHTML），
+ * iOS 此时已开始准备弹选择器，拿到一个正在被整体替换的列表，就弹出一长条空白
+ * （v1.5.0 美化快切同病）。头像的聊天下拉一直正常，正因为它的选项是提前填好的。
+ * 现在平时就盯着酒馆那边的列表，一变就跟着改；按下去的瞬间什么都不动。
  * @param {HTMLElement} el 🔌 按钮
  */
 function harborInstallProfilePicker(el) {
     const picker = document.createElement('select');
     picker.id = 'extensionHarborProfilePicker';
     picker.title = t`Switch connection profile`;
+    el.appendChild(picker);
+
     const main = () => /** @type {HTMLSelectElement} */ (document.getElementById('connection_profiles'));
     const sync = () => {
         const source = main();
@@ -175,17 +182,20 @@ function harborInstallProfilePicker(el) {
             picker.value = source.value;
         }
     };
-    picker.addEventListener('pointerdown', sync);
-    picker.addEventListener('touchstart', sync, { passive: true });
-    picker.addEventListener('focus', sync);
     picker.addEventListener('change', () => {
         const source = main();
         if (!source || source.value === picker.value) return;
         source.value = picker.value;
         source.dispatchEvent(new Event('change'));
     });
-    el.appendChild(picker);
-    sync();
+
+    // 酒馆的连接配置列表可能比我们晚出现，最多等一分钟
+    waitUntilCondition(() => main() !== null, 60000, 200).then(() => {
+        const source = main();
+        sync();
+        new MutationObserver(sync).observe(source, { childList: true, subtree: true, characterData: true, attributes: true });
+        source.addEventListener('change', sync);
+    }).catch(() => {});
 }
 
 function onChatManagerClick() {
