@@ -41,6 +41,32 @@ body #sheld.flexPatch #chat {
     z-index: 2147483000;
 }
 
+/* v1.5.5 开合只动透明度（ripple 报：开合时聊天区整片白屏重画）。
+   以前是 display 开合：面板在聊天区上方忽有忽无，iOS 会把下面整片聊天区重新栅格化，
+   再加上毛玻璃要先画好背后内容才能糊——几百条带图消息一起重画就白屏。
+   现在面板常驻、自成一个合成层，开合只切 opacity（外加 pointer-events 让它收起时点不到），
+   交给 GPU 合成，不再增删页面结构、不再重排；
+   不用毛玻璃，改用栏条同色、透明度拉到 0.92 的底色（JS 算 --harborPanelBg），字照样看得清。 */
+#sheld > #extensionConnectionProfiles.harborProfilesFloat,
+body.harborOverlay > #extensionConnectionProfiles {
+    display: flex !important;
+    /* 只用 opacity 开合，不碰 visibility：实测切 visibility 会触发整屏重画，切 opacity 一次都不画 */
+    opacity: 0;
+    pointer-events: none;
+    transform: translateZ(0);
+    will-change: opacity;
+    contain: layout paint;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background-color: var(--harborPanelBg, var(--SmartThemeBlurTintColor)) !important;
+}
+
+#sheld > #extensionConnectionProfiles.harborProfilesFloat.visible,
+body.harborOverlay > #extensionConnectionProfiles.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
 #extensionSideBar {
     top: 0;
     display: none;

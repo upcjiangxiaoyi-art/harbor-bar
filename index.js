@@ -535,6 +535,18 @@ function harborAnchorViewport() {
  * 看得见也点不着。所以探测到港口会被压住时，港口（连同连接面板）
  * 整个搬到 <body> 下，fixed 浮在 #top-bar 下沿；普通美化下原样搬回 #sheld。
  */
+/**
+ * 把颜色的透明度拉到至少 0.92（面板要盖在聊天上还看得清字）。认不出的格式原样返回。
+ * @param {string} color CSS 颜色
+ * @returns {string}
+ */
+function harborSolidColor(color) {
+    const m = String(color).match(/rgba?\(([^)]+)\)/);
+    if (!m) return color;
+    const [r, g, b, a = '1'] = m[1].split(',').map(x => x.trim());
+    return `rgba(${r}, ${g}, ${b}, ${Math.max(Number(a), 0.92)})`;
+}
+
 function harborAdaptLayout() {
     const topSettingsBar = document.getElementById('top-bar');
     // 变量写在 body 上：<html> 的 style 归 ST 主题色用，我们要监听它，不能自己也往上写。
@@ -565,6 +577,12 @@ function harborAdaptLayout() {
             const alpha = alphaMatch ? Number(alphaMatch[1].split(',')[3] ?? 1) : 1;
             const blurUseless = alpha >= 0.95 || document.body.classList.contains('no-blur');
             root.style.setProperty('--harborBarBackdrop', blurUseless ? 'none' : (barStyle.backdropFilter || barStyle.webkitBackdropFilter || 'none'));
+            // v1.5.5 连接面板不用毛玻璃，改用近乎不透明的底色：栏条有颜色就用栏条色，
+            // 栏条是透明的（竟夕相思）就用主题的模糊底色，透明度都拉到至少 0.92。
+            root.style.setProperty('--harborPanelBg', harborSolidColor(
+                alpha >= 0.05 ? barStyle.backgroundColor
+                    : getComputedStyle(document.body).getPropertyValue('--SmartThemeBlurTintColor').trim(),
+            ));
         }
         // v1.3.15 美化把港口排成网格（观月札记手机端：两行 14 列，第一行「聊天名 | 搜索框」）
         // → 挂 harborGrid，CSS 把原版搜索框那格让给车队（搜索已收进车队里）。
