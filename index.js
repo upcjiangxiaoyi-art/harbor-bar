@@ -48,7 +48,7 @@ const connectionProfilesIcon = document.createElement('img');
 
 const icons = [
     // v1.5.0 按钮换班（ripple 定）：📦 侧边栏、📇 聊天文件管理下岗（切聊天有头像），
-    // ⤓ 跳到最新、⬅️ 上一版、🔁 重 roll 上岗。（🎨 美化快切试过：美化一多，iOS 下拉滚轮空白，撤了）
+    // ⤓ 跳到最新、▶️ 继续生成、🔁 重 roll 上岗。（🎨 美化快切试过：美化一多，iOS 下拉滚轮空白，撤了）
     {
         id: 'extensionTopBarToggleConnectionProfiles',
         icon: 'fa-fw fa-solid fa-plug',
@@ -65,18 +65,20 @@ const icons = [
         onClick: () => harborJump(false),
     },
     {
-        id: 'extensionHarborSwipeBack',
-        icon: 'fa-fw fa-solid fa-angle-left',
+        id: 'extensionHarborContinue',
+        icon: 'fa-fw fa-solid fa-forward',
         position: 'right',
-        title: t`Previous version`,
-        onClick: () => document.querySelector('#chat .last_mes .swipe_left')?.click(),
+        title: t`Continue`,
+        onClick: () => document.getElementById('option_continue')?.click(),
     },
     {
         id: 'extensionHarborReroll',
         icon: 'fa-fw fa-solid fa-rotate-right',
         position: 'right',
-        title: t`Regenerate (keeps old versions)`,
-        onClick: harborReroll,
+        title: t`Regenerate`,
+        // 就是菜单里的「重新生成」：旧回复整条删掉再写，不留回头路（ripple 要的就是这个）。
+        // 想留旧版、左右翻，用消息上自带的箭头。
+        onClick: () => document.getElementById('option_regenerate')?.click(),
     },
     {
         id: 'extensionTopBarNewChat',
@@ -149,21 +151,6 @@ function harborInstallJumpLongPress(el) {
         }
     }, true);
     el.addEventListener('contextmenu', (e) => e.preventDefault());
-}
-
-/**
- * 🔁 重 roll = 替用户点最后一条消息上的「→」（滑一下）：
- * 已在最新一版时生成新的一版，旧版全留着，⬅️ 能翻回去。
- * 不走菜单的「重新生成」——那个会先把最后一条回复整条删掉（chat.length - 1）。
- * 最后一条是用户自己的（AI 还没回）时没有箭头，才退回「重新生成」：这时它只是补一条回复，不删东西。
- */
-function harborReroll() {
-    const swipeRight = /** @type {HTMLElement} */ (document.querySelector('#chat .last_mes .swipe_right'));
-    if (swipeRight) {
-        swipeRight.click();
-        return;
-    }
-    document.getElementById('option_regenerate')?.click();
 }
 
 function onChatManagerClick() {
