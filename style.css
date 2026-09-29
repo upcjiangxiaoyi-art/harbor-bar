@@ -312,6 +312,29 @@ body.movingUI #extensionTopBar {
     cursor: pointer;
 }
 
+/* v1.5.7 🔌 连接配置：透明下拉框铺满图标，点图标 = 弹系统选择器 */
+#extensionTopBarToggleConnectionProfiles {
+    position: relative;
+}
+
+#extensionTopBar #extensionTopBarToggleConnectionProfiles > #extensionHarborProfilePicker {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    opacity: 0 !important;
+    cursor: pointer;
+    /* 图标是 Font Awesome 字体，不单独指定的话下拉框会继承图标字体——里面没有中文，
+       iOS 弹出的列表就是一长条空白（v1.5.0 美化快切就栽在这）。 */
+    font: 16px -apple-system, BlinkMacSystemFont, 'PingFang SC', system-ui, sans-serif !important; /* ≥16px 防 iOS 聚焦放大 */
+    color: #000 !important;
+    text-shadow: none !important;
+    -webkit-text-fill-color: #000 !important;
+}
+
 /* ⤓ 长按不弹系统菜单、不选中文字 */
 #extensionHarborJump {
     -webkit-touch-callout: none;
