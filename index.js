@@ -612,8 +612,10 @@ function harborAdaptLayout() {
                 sheld.insertBefore(topBar, chat);
                 sheld.insertBefore(connectionProfiles, chat);
             }
+            harborPlaceProfiles();
             return;
         }
+        connectionProfiles.classList.remove('harborProfilesFloat');
         if (topBar.parentElement !== document.body) {
             document.body.append(topBar, connectionProfiles);
         }
@@ -1006,9 +1008,31 @@ async function onToggleConnectionProfilesClick() {
     }
 
     button.classList.toggle('active');
+    harborPlaceProfiles();
     connectionProfiles.classList.toggle('visible');
     savePanelsState();
     await onOnlineStatusChange();
+}
+
+/**
+ * v1.5.4 连接面板浮起来（ripple 报：点 🔌 开合时整页狂卡）。
+ * 原版面板挤在文档流里：一开一合，聊天区就被压矮 / 拉高，
+ * 浏览器得把几百条带大图和阴影的消息整个重排重画一遍。
+ * 改成 absolute 盖在聊天区上面，聊天区尺寸纹丝不动。
+ * 美化自己给面板排了位置（观月札记：fixed）或港口整体浮起时不插手。
+ */
+function harborPlaceProfiles() {
+    if (connectionProfiles.parentElement !== sheld) {
+        connectionProfiles.classList.remove('harborProfilesFloat');
+        return;
+    }
+    // 先摘掉自己的 class，看美化有没有给它排位置
+    connectionProfiles.classList.remove('harborProfilesFloat');
+    if (getComputedStyle(connectionProfiles).position !== 'static') {
+        return;
+    }
+    connectionProfiles.classList.add('harborProfilesFloat');
+    sheld.style.setProperty('--harborProfilesFloatTop', `${topBar.offsetTop + topBar.offsetHeight}px`);
 }
 
 async function onOnlineStatusChange() {

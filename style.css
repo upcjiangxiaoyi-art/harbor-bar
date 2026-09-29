@@ -32,6 +32,15 @@ body #sheld.flexPatch #chat {
     border-radius: 0 0 10px 10px;
 }
 
+/* v1.5.4 连接面板盖在聊天区上面，不挤占文档流——开合时聊天区不重排 */
+#sheld > #extensionConnectionProfiles.harborProfilesFloat {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: var(--harborProfilesFloatTop, var(--bottomFormBlockSize));
+    z-index: 2147483000;
+}
+
 #extensionSideBar {
     top: 0;
     display: none;
