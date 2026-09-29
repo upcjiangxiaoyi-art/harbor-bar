@@ -226,6 +226,61 @@ body.movingUI #extensionTopBar {
     padding-right: 20px;
 }
 
+/* v1.4.0 圆头像：下拉框透明铺在头像上，点头像 = 点下拉框 */
+#extensionHarborAvatar {
+    position: relative;
+    flex: 0 0 auto;
+    align-self: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: 0 0 0 1.5px var(--SmartThemeBorderColor, rgba(255, 255, 255, 0.3));
+    /* 原来是聊天名框 flex:1 撑开中间，把车队和右侧按钮推到右边；现在由头像的右外边距接班 */
+    margin-right: auto;
+}
+
+#extensionHarborAvatar > img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+#extensionHarborAvatar.noAvatar > img {
+    display: none;
+}
+
+#extensionHarborAvatar.noAvatar::before {
+    content: '\f086';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+#extensionTopBar #extensionHarborAvatar > #extensionTopBarChatName {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    opacity: 0 !important;
+    font-size: 16px !important; /* iOS：字号 <16px 的下拉框聚焦时会自动放大页面 */
+    cursor: pointer;
+}
+
 #extensionTopBarSearchInput {
     background-color: transparent;
     font-size: calc(var(--mainFontSize) * 0.9);
@@ -284,6 +339,12 @@ body.movingUI #extensionTopBar {
 
 /* v1.3.15 美化把港口排成网格时（JS 挂 harborGrid），车队占第一行右半边——
    原版 Chat Top Bar 的搜索框格子。不然车队会被塞进一个 1/14 宽的小格里。 */
+#extensionTopBar.harborGrid > #extensionHarborAvatar {
+    grid-row: 1;
+    grid-column: 1 / 2;
+    justify-self: start;
+}
+
 #extensionTopBar.harborGrid > #extensionHarborDock {
     grid-row: 1;
     grid-column: 8 / -1;

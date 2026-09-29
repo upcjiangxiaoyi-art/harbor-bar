@@ -24,6 +24,10 @@ const apiBlock = /** @type {HTMLDivElement} */ (document.getElementById('rm_api_
 
 const topBar = document.createElement('div');
 const chatName = document.createElement('select');
+// v1.4.0 圆头像（ripple 提）：聊天名下拉框换成一颗小圆头像，下拉框本身透明叠在头像上，
+// 点头像照样弹出聊天记录列表切换。
+const harborAvatar = document.createElement('div');
+const harborAvatarImg = document.createElement('img');
 const searchInput = document.createElement('input');
 const harborDock = document.createElement('div');
 
@@ -146,6 +150,36 @@ function patchSheldIfNeeded() {
     }
 }
 
+/**
+ * 按当前聊天刷新圆头像：单聊用角色头像；群聊用群头像，没有就用第一位成员的。
+ * 不在聊天里 / 取不到头像 → 挂 noAvatar，CSS 显示一个聊天小图标占位。
+ * @param {string} name 当前聊天名（悬停提示用）
+ */
+function harborUpdateAvatar(name) {
+    harborAvatar.title = name || t`No chat selected`;
+    let src = '';
+    if (name) {
+        const context = SillyTavern.getContext();
+        const thumb = (file) => file ? `/thumbnail?type=avatar&file=${encodeURIComponent(file)}` : '';
+        if (context.groupId) {
+            const group = context.groups?.find(x => x.id == context.groupId);
+            if (group?.avatar_url) {
+                src = group.avatar_url;
+            } else if (group?.members?.length) {
+                src = thumb(group.members[0]);
+            }
+        } else {
+            src = thumb(context.characters?.[context.characterId]?.avatar);
+        }
+    }
+    harborAvatar.classList.toggle('noAvatar', !src);
+    if (src && harborAvatarImg.getAttribute('src') !== src) {
+        harborAvatarImg.src = src;
+    } else if (!src) {
+        harborAvatarImg.removeAttribute('src');
+    }
+}
+
 function setChatName(name) {
     const isNotInChat = !name;
     chatName.innerHTML = '';
@@ -154,6 +188,7 @@ function setChatName(name) {
     selectedOption.selected = true;
     chatName.appendChild(selectedOption);
     chatName.disabled = true;
+    harborUpdateAvatar(name);
 
     icons.forEach(icon => {
         const iconElement = document.getElementById(icon.id);
@@ -311,7 +346,13 @@ function addTopBar() {
     searchToggle.addEventListener('click', harborToggleSearch);
 
     harborDock.append(searchToggle, searchInput);
-    topBar.append(chatName, harborDock);
+    harborAvatar.id = 'extensionHarborAvatar';
+    harborAvatarImg.alt = '';
+    harborAvatarImg.draggable = false;
+    harborAvatarImg.addEventListener('error', () => harborAvatar.classList.add('noAvatar'));
+    harborAvatarImg.addEventListener('load', () => harborAvatar.classList.remove('noAvatar'));
+    harborAvatar.append(harborAvatarImg, chatName);
+    topBar.append(harborAvatar, harborDock);
     sheld.insertBefore(topBar, chat);
 }
 
@@ -634,7 +675,7 @@ function addIcons() {
             icon.onClick();
         });
         if (icon.position === 'left') {
-            topBar.insertBefore(iconElement, chatName);
+            topBar.insertBefore(iconElement, harborAvatar);
             return;
         }
         if (icon.position === 'right') {
