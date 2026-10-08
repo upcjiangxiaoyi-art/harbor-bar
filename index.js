@@ -36,14 +36,16 @@ const harborDock = document.createElement('div');
  * 车位名单：满屏漂的浮标凭此入库。新插件的浮标想进港，在这里加一行即可。
  * 二改：波哥（Fable 5）× ripple ｜ 原作：Cohee1207 (SillyTavern)
  * ======================================================================== */
+// v1.6.2 名单顺序 = 车队从左到右的顺序（跟谁先出现无关）。想换车位，调这里的先后即可。
 const HARBOR_REGISTRY = [
-    { selector: '#adr048-fab', name: 'Arrebol D 小红霞' },
-    { selector: '#ipe-chat-quick-entry', name: 'IPE 小海螺' },
-    { selector: '#lcl2_floater', name: 'Luciole 小萤火 2.0' },
     // 青鸟只在「悬浮球」模式下入库；「魔法棒」模式它住在扩展菜单里，是菜单项，不动它。
     // 停的是外层 #bluebird-entry：插件靠 entry.querySelector('.bb-entry-button') 更新未读数，
     // 把里面的按钮单独拎走插件会报错。按钮的 fixed 定位由 style.css 压住。
+    // 排第一（ripple 定：青鸟停最左）。
     { selector: '#bluebird-entry[data-bb-entry-mode="floating"]', name: '青鸟 Bluebird' },
+    { selector: '#adr048-fab', name: 'Arrebol D 小红霞' },
+    { selector: '#ipe-chat-quick-entry', name: 'IPE 小海螺' },
+    { selector: '#lcl2_floater', name: 'Luciole 小萤火 2.0' },
 ];
 const connectionProfiles = document.createElement('div');
 const connectionProfilesStatus = document.createElement('div');
@@ -476,8 +478,29 @@ function harborStyleIntact(el) {
  * 原浮标不销毁不隐藏——本体挪进泊位，原插件的看门狗查户口时元素仍在，不会重造。
  * 点击行为不动：各家浮标自己的开面板逻辑原样生效。
  */
+/**
+ * v1.6.2 按名单顺序把车插进车队：找名单里排在它后面、已经在港里的第一辆车，插到它前面；
+ * 后面没有车就停到队尾。以前一律 appendChild，谁晚到谁排最后（青鸟出现得晚，总在最右）。
+ * @param {HTMLElement} el 浮标元素
+ * @param {number} index 它在 HARBOR_REGISTRY 里的位置
+ */
+function harborPlaceCar(el, index) {
+    for (const later of HARBOR_REGISTRY.slice(index + 1)) {
+        const next = document.querySelector(later.selector);
+        if (next && next !== el && next.parentElement === harborDock) {
+            if (el.nextElementSibling !== next) {
+                harborDock.insertBefore(el, next);
+            }
+            return;
+        }
+    }
+    if (el.parentElement !== harborDock || el.nextElementSibling) {
+        harborDock.appendChild(el);
+    }
+}
+
 function harborParkFloaters() {
-    for (const car of HARBOR_REGISTRY) {
+    for (const [index, car] of HARBOR_REGISTRY.entries()) {
         const el = /** @type {HTMLElement} */ (document.querySelector(car.selector));
         if (!el) {
             continue;
@@ -485,14 +508,14 @@ function harborParkFloaters() {
         if (el.dataset.harborParked === '1') {
             // v1.2.3 兜底：车牌还在但车被原插件拖出泊位（重挂到 body 等），抓回来。
             if (el.parentElement !== harborDock) {
-                harborDock.appendChild(el);
+                harborPlaceCar(el, index);
                 harborApplyParkedStyle(el);
             }
             continue;
         }
         el.dataset.harborParked = '1';
         el.title = car.name;
-        harborDock.appendChild(el);
+        harborPlaceCar(el, index);
         harborApplyParkedStyle(el);
 
         // style 哨兵：原插件重刷行内样式时，把泊位制服再穿回去。
