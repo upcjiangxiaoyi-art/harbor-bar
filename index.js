@@ -395,7 +395,10 @@ function addTopBar() {
     searchToggle.addEventListener('touchend', harborToggleSearch, { passive: false });
     searchToggle.addEventListener('click', harborToggleSearch);
 
-    harborDock.append(searchToggle, searchInput);
+    // v1.6.1 弹簧：🔍 留左、车队靠右（车进港是 appendChild，排在弹簧后面）
+    const dockSpacer = document.createElement('span');
+    dockSpacer.id = 'extensionHarborDockSpacer';
+    harborDock.append(searchToggle, searchInput, dockSpacer);
     harborAvatar.id = 'extensionHarborAvatar';
     harborAvatarImg.alt = '';
     harborAvatarImg.draggable = false;

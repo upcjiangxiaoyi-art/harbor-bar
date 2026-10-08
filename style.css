@@ -349,13 +349,18 @@ body.movingUI #extensionTopBar {
        车队保持完整不被压——压成半张脸的小海螺不体面。
        flex-shrink:0 = 车队免缩特权；max-width 是极端兜底，
        车实在太多超过六成宽度时才在队内裁切。 */
-    flex-shrink: 0;
-    max-width: 60%;
     min-width: 0;
     overflow: hidden;
-    /* v1.6.0 车队紧跟头像（ripple 提：头像和搜索之间空一大块）：
-       空白挪到车队和右侧按钮之间——以前是头像的右外边距把车队推到右边。 */
-    margin-right: auto;
+    /* v1.6.1 港口吃掉中间的空白（flex-grow），不缩（flex-shrink:0 保留车队免缩特权）：
+       🔍 留在左边紧跟头像，车队靠右停、挨着右侧按钮——给青鸟腾位置（ripple 定）。 */
+    flex: 1 0 auto;
+}
+
+/* 港内弹簧：夹在 🔍 和车队之间吃掉空白，把车队顶到右边。
+   不用「第一辆车 margin-left:auto」——泊位制服给每辆车写了行内 margin:0 !important，压不过。 */
+#extensionHarborDockSpacer {
+    flex: 1 1 auto !important;
+    min-width: 0;
 }
 
 #extensionHarborDock > * {
