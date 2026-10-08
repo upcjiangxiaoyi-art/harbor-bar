@@ -268,8 +268,6 @@ body.movingUI #extensionTopBar {
     overflow: hidden;
     cursor: pointer;
     box-shadow: 0 0 0 1.5px var(--SmartThemeBorderColor, rgba(255, 255, 255, 0.3));
-    /* 原来是聊天名框 flex:1 撑开中间，把车队和右侧按钮推到右边；现在由头像的右外边距接班 */
-    margin-right: auto;
 }
 
 #extensionHarborAvatar > img {
@@ -355,6 +353,9 @@ body.movingUI #extensionTopBar {
     max-width: 60%;
     min-width: 0;
     overflow: hidden;
+    /* v1.6.0 车队紧跟头像（ripple 提：头像和搜索之间空一大块）：
+       空白挪到车队和右侧按钮之间——以前是头像的右外边距把车队推到右边。 */
+    margin-right: auto;
 }
 
 #extensionHarborDock > * {
@@ -388,6 +389,37 @@ body.movingUI #extensionTopBar {
     grid-column: 8 / -1;
     max-width: none;
     justify-self: end;
+    margin-right: 0;
+}
+
+/* v1.6.0 青鸟入库：外层 #bluebird-entry 由泊位制服管，里面真正浮着的是按钮 .bb-float
+   （插件 CSS 给它 position:fixed、52px 圆球，还会不停往它身上写 left/top）。
+   这里全用 !important 压住：入库后就地站好，缩成 20px，和别的车一样再整车缩七成。
+   position 用 relative 不用 static：未读红点是相对按钮定位的。 */
+#extensionHarborDock > #bluebird-entry .bb-float {
+    position: relative !important;
+    inset: auto !important;
+    width: 20px !important;
+    height: 20px !important;
+    box-shadow: none !important;
+    z-index: auto !important;
+    touch-action: manipulation !important;
+    cursor: pointer !important;
+}
+
+#extensionHarborDock > #bluebird-entry .bb-float svg {
+    width: 15px;
+    height: 15px;
+}
+
+#extensionHarborDock > #bluebird-entry .bb-badge {
+    top: 0;
+    right: 0;
+    min-width: 8px;
+    height: 8px;
+    padding: 0;
+    border-radius: 4px;
+    font-size: 0; /* 栏里只留个小红点，数字太小也看不清 */
 }
 
 /* 入库浮标的公共兜底（主装束由 JS 行内 !important 负责） */

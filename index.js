@@ -40,6 +40,10 @@ const HARBOR_REGISTRY = [
     { selector: '#adr048-fab', name: 'Arrebol D 小红霞' },
     { selector: '#ipe-chat-quick-entry', name: 'IPE 小海螺' },
     { selector: '#lcl2_floater', name: 'Luciole 小萤火 2.0' },
+    // 青鸟只在「悬浮球」模式下入库；「魔法棒」模式它住在扩展菜单里，是菜单项，不动它。
+    // 停的是外层 #bluebird-entry：插件靠 entry.querySelector('.bb-entry-button') 更新未读数，
+    // 把里面的按钮单独拎走插件会报错。按钮的 fixed 定位由 style.css 压住。
+    { selector: '#bluebird-entry[data-bb-entry-mode="floating"]', name: '青鸟 Bluebird' },
 ];
 const connectionProfiles = document.createElement('div');
 const connectionProfilesStatus = document.createElement('div');
