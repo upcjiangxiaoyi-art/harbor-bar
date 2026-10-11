@@ -188,6 +188,14 @@ body.reduced-motion #extensionSideBar {
     }
 }
 
+/* v1.6.4 按钮分一点空白：变宽 = 间距松 + 好点；最多 44px，宽屏上不会无限拉长，
+   剩下的空白还是归中间。图标在加宽后的按钮里居中。 */
+#extensionTopBar > .right_menu_button {
+    flex-grow: 1;
+    max-width: 44px;
+    text-align: center;
+}
+
 #extensionTopBar .not-in-chat {
     opacity: 0.5;
 }
@@ -352,8 +360,10 @@ body.movingUI #extensionTopBar {
     min-width: 0;
     overflow: hidden;
     /* v1.6.1 港口吃掉中间的空白（flex-grow），不缩（flex-shrink:0 保留车队免缩特权）：
-       🔍 留在左边紧跟头像，车队靠右停、挨着右侧按钮——给青鸟腾位置（ripple 定）。 */
-    flex: 1 0 auto;
+       🔍 留在左边紧跟头像，车队靠右停、挨着右侧按钮——给青鸟腾位置（ripple 定）。
+       v1.6.4 空白不再全给港口：港口占 2 份，每个按钮各占 1 份（见下方 .right_menu_button），
+       搜索和车队之间的空白变小，按钮们松散一点、能点的范围也大一点。 */
+    flex: 2 0 auto;
 }
 
 /* 港内弹簧：夹在 🔍 和车队之间吃掉空白，把车队顶到右边。
