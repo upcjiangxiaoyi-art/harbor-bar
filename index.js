@@ -53,6 +53,8 @@ const connectionProfilesSelect = document.createElement('select');
 const connectionProfilesIcon = document.createElement('img');
 
 const icons = [
+    // v1.5.0 按钮换班（ripple 定）：📦 侧边栏、📇 聊天文件管理下岗（切聊天有头像），
+    // ⤓ 跳到最新、▶️ 继续生成、🔁 重 roll 上岗。（🎨 美化快切试过：美化一多，iOS 下拉滚轮空白，撤了）
     // v1.6.5 🗑 删除聊天放最左：不常用，放远点也免得误删；✖ 关闭聊天回最右（ripple 定）。左侧按钮按数组顺序排。
     {
         id: 'extensionTopBarDeleteChat',
@@ -120,8 +122,6 @@ const icons = [
         isTemporaryAllowed: true,
         onClick: onCloseChatClick,
     },
-    // v1.5.0 按钮换班（ripple 定）：📦 侧边栏、📇 聊天文件管理下岗（切聊天有头像），
-    // ⤓ 跳到最新、▶️ 继续生成、🔁 重 roll 上岗。（🎨 美化快切试过：美化一多，iOS 下拉滚轮空白，撤了）
 ];
 
 /**
