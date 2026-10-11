@@ -53,17 +53,19 @@ const connectionProfilesSelect = document.createElement('select');
 const connectionProfilesIcon = document.createElement('img');
 
 const icons = [
-    // v1.6.4 ✖ 关闭聊天挪到最左（ripple 提：右边挤，挨着别的按钮老误点）。左侧按钮按数组顺序排。
+    // v1.6.5 🗑 删除聊天放最左：不常用，放远点也免得误删；✖ 关闭聊天回最右（ripple 定）。左侧按钮按数组顺序排。
     {
-        id: 'extensionTopBarCloseChat',
-        icon: 'fa-fw fa-solid fa-times',
+        id: 'extensionTopBarDeleteChat',
+        icon: 'fa-fw fa-solid fa-trash',
         position: 'left',
-        title: t`Close chat`,
-        isTemporaryAllowed: true,
-        onClick: onCloseChatClick,
+        title: t`Delete chat`,
+        onClick: async () => {
+            const confirm = await Popup.show.confirm(t`Are you sure?`);
+            if (confirm) {
+                await executeSlashCommandsWithOptions('/delchat');
+            }
+        },
     },
-    // v1.5.0 按钮换班（ripple 定）：📦 侧边栏、📇 聊天文件管理下岗（切聊天有头像），
-    // ⤓ 跳到最新、▶️ 继续生成、🔁 重 roll 上岗。（🎨 美化快切试过：美化一多，iOS 下拉滚轮空白，撤了）
     {
         id: 'extensionTopBarToggleConnectionProfiles',
         icon: 'fa-fw fa-solid fa-plug',
@@ -111,17 +113,15 @@ const icons = [
         onClick: onRenameChatClick,
     },
     {
-        id: 'extensionTopBarDeleteChat',
-        icon: 'fa-fw fa-solid fa-trash',
+        id: 'extensionTopBarCloseChat',
+        icon: 'fa-fw fa-solid fa-times',
         position: 'right',
-        title: t`Delete chat`,
-        onClick: async () => {
-            const confirm = await Popup.show.confirm(t`Are you sure?`);
-            if (confirm) {
-                await executeSlashCommandsWithOptions('/delchat');
-            }
-        },
+        title: t`Close chat`,
+        isTemporaryAllowed: true,
+        onClick: onCloseChatClick,
     },
+    // v1.5.0 按钮换班（ripple 定）：📦 侧边栏、📇 聊天文件管理下岗（切聊天有头像），
+    // ⤓ 跳到最新、▶️ 继续生成、🔁 重 roll 上岗。（🎨 美化快切试过：美化一多，iOS 下拉滚轮空白，撤了）
 ];
 
 /**
